@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
-    MODE: Literal["LOCAL", "DOCKER", "PROD"]
+    MODE: Literal["LOCAL", "DOCKER", "PROD", "TEST"]
 
     POSTGRES_DB: str
     POSTGRES_HOST: str

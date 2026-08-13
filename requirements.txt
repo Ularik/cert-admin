@@ -3,3 +3,6 @@ alembic
 asyncpg
 bcrypt
 pyjwt
+pytest
+pytest-dotenv
+pytest-asyncio

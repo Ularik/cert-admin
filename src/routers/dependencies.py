@@ -28,14 +28,19 @@ async def get_current_user(token: str = Depends(get_token)) -> UserInCookiesSche
 AuthUserDep = Annotated[UserInCookiesSchema, Depends(get_current_user)]
 
 
-async def get_admin_user(token: str = Depends(get_token)) -> UserInCookiesSchema | None:
-    user_data = await AuthService.decode_token(token)
+async def get_admin_user(user_data: UserInCookiesSchema = Depends(get_current_user)) -> UserInCookiesSchema:
     if user_data.status != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав для выполнения операции"
         )
-
     return user_data
 
+async def get_head_user(user_data: UserInCookiesSchema = Depends(get_current_user)) -> UserInCookiesSchema:
+    if user_data.status != "HEAD":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав для выполнения операции"
+        )
+    return user_data
 
