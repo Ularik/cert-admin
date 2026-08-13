@@ -22,17 +22,16 @@ class Tasks(Base):
         server_default=func.timezone('Asia/Bishkek', func.now()),
         onupdate=func.timezone('Asia/Bishkek', func.now())
     )
-
     # Связи
-    attachments: Mapped[List["TaskDocument"]] = relationship(
+    attachments: Mapped[list["TaskDocuments"]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
-    replies: Mapped[List["TaskReply"]] = relationship(
+    replies: Mapped[list["TaskReply"]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
 
 
-class TaskDocument(Base):
+class TaskDocuments(Base):
     """Документы, прикрепленные к самой задаче"""
     __tablename__ = "task_documents"
 
