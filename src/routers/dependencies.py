@@ -4,6 +4,9 @@ from src.schemas.users import UserInCookiesSchema
 from src.db_manager.db_manager import DbManager
 from fastapi import Depends, Request, HTTPException, status
 from src.services.auth import AuthService
+from pydantic import BaseModel, Field
+from datetime import datetime
+
 
 async def get_db():
     async with DbManager(session_factory=AsyncSessionMaker) as db:
@@ -12,6 +15,15 @@ async def get_db():
 
 DBDep = Annotated[DbManager, Depends(get_db)]
 
+
+class QueryParamsSchema(BaseModel):
+    department: int | None = None
+    created_at: datetime | None = None
+    limit: int = Field(10, gt=0, lt=20)
+    offset: int = Field(0, ge=0)
+
+
+QueryParamsDep = Annotated[QueryParamsSchema, Depends(QueryParamsSchema)]
 
 def get_token(request: Request) -> str:
     token = request.cookies.get("access_token", None)

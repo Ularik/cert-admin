@@ -5,6 +5,7 @@ from src.routers.head.main import router as head_router
 from src.routers.users import router as user_router
 from src.routers.departments import router as departments_router
 from src.logging_conf.logging_conf import setup_logging
+from src.exceptions.exception_handlers import register_exception_handlers
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -30,3 +31,5 @@ app.include_router(head_router,
 
 app.include_router(user_router)
 app.include_router(departments_router)
+
+register_exception_handlers(app)

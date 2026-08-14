@@ -1,12 +1,11 @@
 from pydantic import BaseModel, ConfigDict
+from fastapi import UploadFile
 from datetime import datetime
 from src.schemas.users import UserOutSchema
 
 
 class TaskDocumentAddSchema(BaseModel):
-    filename: str
-    mime_type: str
-    file_data: bytes
+    file: UploadFile
     task_id: int
 
 
@@ -22,6 +21,7 @@ class TaskDocumentLiteOutSchema(BaseModel):
 
 
 class TaskCreateUpdateSchema(BaseModel):
+    author_id: int
     title: str
     description: str | None = None
     department_id: int | None = None
@@ -30,6 +30,8 @@ class TaskCreateUpdateSchema(BaseModel):
 
 class TaskLiteOutSchema(TaskCreateUpdateSchema):
     id: int
+    created_at: datetime
+    updated_at: datetime
 
 class TaskOutSchema(TaskCreateUpdateSchema):
     id: int
@@ -37,4 +39,6 @@ class TaskOutSchema(TaskCreateUpdateSchema):
     attachments: list[TaskDocumentLiteOutSchema]
     created_at: datetime
     updated_at: datetime
+
+# class Task
 

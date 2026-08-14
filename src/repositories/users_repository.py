@@ -1,6 +1,8 @@
 from src.repositories.base import BaseRepository
-from src.models.users import Users, UsersTasks
-from src.schemas.users import UserHashedPswdSchema, UserOutSchema, UsersTasksSchema
+from src.models.users import Users
+from src.models.users_tasks import UsersTasks
+from src.schemas.users import UserHashedPswdSchema, UserOutSchema
+from src.schemas.users_tasks import UsersConnectTaskSchema
 from sqlalchemy import select, insert
 
 
@@ -15,7 +17,7 @@ class UsersRepository(BaseRepository):
         if user:
             return UserHashedPswdSchema.model_validate(user)
 
-    async def relate_users_tasks(self, data: UsersTasksSchema):
+    async def relate_users_tasks(self, data: UsersConnectTaskSchema):
         await self.session.execute(
             insert(UsersTasks)
             .values(**data.model_dump())

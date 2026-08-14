@@ -14,3 +14,7 @@ class DepartmentNotFoundException(ObjectNotFoundException):
 
 class UniqueObjIsExistException(Exception):
     detail = 'Такой объект уже существует'
+
+
+class TaskAlreadyExistException(UniqueObjIsExistException):
+    detail = 'Такая задача уже существует, поменяйте название title'

@@ -46,7 +46,7 @@ class BaseRepository:
         return self.schema.model_validate(result)
 
     async def add_obj(self, data: BaseModel):
-        query = insert(self.model).values(**data.model_dump()).returning(self.model)
+        query = insert(self.model).values(**data.model_dump(exclude_unset=True)).returning(self.model)
         try:
             result = await self.session.execute(query)
         except IntegrityError as err:

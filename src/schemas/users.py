@@ -40,8 +40,3 @@ class UserHashedPswdSchema(UserAddSchema):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class UsersTasksSchema(BaseModel):
-    user_id: int
-    task_id: int
