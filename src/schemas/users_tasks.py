@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class UsersConnectTaskSchema(BaseModel):
     user_id: int
-    tasks_id: int
+    task_id: int
+    model_config = ConfigDict(from_attributes=True, extra="ignore")

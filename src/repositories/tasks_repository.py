@@ -1,9 +1,9 @@
-from src.models.tasks import Tasks, TaskDocuments
+from src.models.tasks import Tasks
 from src.repositories.base import BaseRepository
 from src.schemas.tasks import TaskLiteOutSchema, TaskOutSchema
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-
+from src.repositories.tasks_users_repository import UsersTasksRepository
 
 
 class TasksRepository(BaseRepository):
@@ -25,6 +25,3 @@ class TasksRepository(BaseRepository):
 
         result = await self.session.execute(query)
         return [TaskOutSchema.model_validate(row) for row in result.scalars()]
-
-
-

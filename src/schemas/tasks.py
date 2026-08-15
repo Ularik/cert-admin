@@ -14,7 +14,7 @@ class TaskDocumentOutSchema(TaskDocumentAddSchema):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 
-class TaskDocumentLiteOutSchema(BaseModel):
+class DocumentLiteSchema(BaseModel):
     id: int
     filename: str
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -36,7 +36,7 @@ class TaskLiteOutSchema(TaskCreateUpdateSchema):
 class TaskOutSchema(TaskCreateUpdateSchema):
     id: int
     executors: list[UserOutSchema]
-    attachments: list[TaskDocumentLiteOutSchema]
+    attachments: list[DocumentLiteSchema]
     created_at: datetime
     updated_at: datetime
 

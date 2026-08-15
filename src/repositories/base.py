@@ -4,6 +4,7 @@ from src.exceptions.exceptions import ObjectNotFoundException, UniqueObjIsExistE
 from asyncpg.exceptions import UniqueViolationError, ForeignKeyViolationError
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.exc import NoResultFound, IntegrityError
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 class BaseRepository:
     model = None
@@ -69,7 +70,7 @@ class BaseRepository:
 
         result = await self.session.execute(query)
         try:
-            return self.mapper.map_to_domain_entity(result.scalar_one())
+            return self.schema.model_validate(result.scalar_one())
         except NoResultFound:
             raise ObjectNotFoundException
 
@@ -87,10 +88,21 @@ class BaseRepository:
         else:
             raise ObjectNotFoundException
 
-    async def add_bulk(self, items: list[BaseModel]):
-        if items:
-            query = insert(self.model).values([item.model_dump() for item in items])
-            await self.session.execute(query)
+    async def add_bulk(
+            self,
+            items: list[BaseModel],
+            *,
+            conflict_columns: list[str] | None = None,
+    ):
+        if not items:
+            return
+
+        query = pg_insert(self.model).values([item.model_dump() for item in items])
+
+        if conflict_columns:
+            query = query.on_conflict_do_nothing(index_elements=conflict_columns)
+
+        await self.session.execute(query)
 
     async def edit_bulk(self, data: BaseModel, **filters):
         query = update(self.model).filter_by(**filters).values(**data).returning(self.model)

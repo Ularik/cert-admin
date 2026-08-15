@@ -24,5 +24,5 @@ class UsersTasksRepository(BaseRepository):
             await self.delete_bulk(filter, task_id=task_id)
 
         if new_user_ids:
-            new_users_tasks = [UsersConnectTaskSchema(user_id=user_id, tasks_id=task_id) for user_id in new_user_ids]
+            new_users_tasks = [UsersConnectTaskSchema(user_id=user_id, task_id=task_id) for user_id in new_user_ids]
             await self.add_bulk(new_users_tasks)
