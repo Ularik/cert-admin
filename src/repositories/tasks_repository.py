@@ -3,7 +3,6 @@ from src.repositories.base import BaseRepository
 from src.schemas.tasks import TaskLiteOutSchema, TaskOutSchema
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from src.repositories.tasks_users_repository import UsersTasksRepository
 
 
 class TasksRepository(BaseRepository):

@@ -1,10 +1,10 @@
 from src.exceptions.exceptions import ObjectNotFoundException, DepartmentNotFoundException, UniqueObjIsExistException, \
-    TaskAlreadyExistException
+    TaskAlreadyExistException, HasNotRightsToTaskException, UserNotFoundException
 from src.routers.dependencies import QueryParamsSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
 from src.services.base import BaseService
 from src.schemas.tasks import (TaskCreateUpdateSchema, TaskOutSchema,
-                               TaskLiteOutSchema, TaskDocumentAddSchema)
+                               TaskLiteOutSchema)
 from fastapi import UploadFile
 from src.models.users import Users
 
@@ -36,7 +36,10 @@ class TasksService(BaseService):
             UsersConnectTaskSchema(user_id=user_id, task_id=new_task.id)
             for user_id in executor_ids
         ]
-        await self.db.tasks_users.connect_user_task(tasks_executors_data_list)
+        try:
+            await self.db.tasks_users.connect_user_task(tasks_executors_data_list)
+        except ObjectNotFoundException:
+            raise UserNotFoundException
         await self.db.save()
 
         new_task_full_out = TaskOutSchema(**new_task.model_dump(), attachments=documents, executors=executors)
@@ -77,3 +80,10 @@ class TasksService(BaseService):
 
     async def update_executors_task(self, executor_ids: list[int], task_id: int) -> None:
         await self.db.tasks_users.set_user_task(executors_ids=executor_ids, task_id=task_id)
+
+    async def delete_task(self, task_id: int, user_id: int) -> None:
+        task: TaskLiteOutSchema = await self.db.tasks.get_one(id=task_id)
+        if task.author_id != user_id:
+            raise HasNotRightsToTaskException
+        await self.db.tasks.delete_bulk(id=task_id)
+        await self.db.save()

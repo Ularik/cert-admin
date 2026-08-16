@@ -84,6 +84,11 @@ async def response_on_task(
 
 
 @router.delete("/{id}")
-async def delete_own_task():
-    # удалить только свою задачу
-    pass
+async def delete_own_task(
+        db: DBDep,
+        id: int,
+        user: AuthUserDep,
+):
+    # удалить только свою задач
+    await TasksService(db).delete_task(task_id=id, user_id=user.user_id)
+    return 200, {'status': 'delete success'}

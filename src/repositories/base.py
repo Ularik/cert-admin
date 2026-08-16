@@ -102,7 +102,13 @@ class BaseRepository:
         if conflict_columns:
             query = query.on_conflict_do_nothing(index_elements=conflict_columns)
 
-        await self.session.execute(query)
+        try:
+            await self.session.execute(query)
+        except IntegrityError as err:
+            if isinstance(err.orig.__cause__, ForeignKeyViolationError):
+                raise ObjectNotFoundException from err
+            else:
+                raise err
 
     async def edit_bulk(self, data: BaseModel, **filters):
         query = update(self.model).filter_by(**filters).values(**data).returning(self.model)
