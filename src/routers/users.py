@@ -16,8 +16,8 @@ async def login_user(db: DBDep, data: UserLoginSchema, response: Response):
 
 @router.post("/", summary="Добавление нового пользователя")
 async def add_user(db: DBDep, data: UsersRequestSchema):
-    return await UserService(db).create_user(data)
-
+    res = await UserService(db).create_user(data)
+    return res
 
 @router.get("/")
 async def get_users(db: DBDep):
