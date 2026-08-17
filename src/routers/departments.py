@@ -10,3 +10,6 @@ router = APIRouter(prefix="/departments", tags=["Отделы"])
 async def get_departments(db: DBDep):
     return await DepartmentService(db).get_department()
 
+
+
+

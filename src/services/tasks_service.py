@@ -1,6 +1,7 @@
 from src.exceptions.exceptions import ObjectNotFoundException, DepartmentNotFoundException, UniqueObjIsExistException, \
-    TaskAlreadyExistException, HasNotRightsToTaskException, UserNotFoundException
+    TaskAlreadyExistException, HasNotRightsToTaskException, UserNotFoundException, DependsDepartmentException
 from src.routers.dependencies import QueryParamsSchema
+from src.schemas.users import UserOutSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
 from src.services.base import BaseService
 from src.schemas.tasks import (TaskCreateUpdateSchema, TaskOutSchema,
@@ -16,10 +17,18 @@ class TasksService(BaseService):
             user_id: int,
             title: str,
             description: str | None,
-            department_id: int | None,
             attachments: list[UploadFile] | None,
+            department_id: int | None = None,
             executor_ids: list[int] = []
     ) -> TaskOutSchema:
+
+        user: UserOutSchema = await self.db.users.get_one(id=user_id)
+
+        if user.status != "ADMIN" and not user.department:
+            raise DependsDepartmentException
+
+        if not department_id:
+            department_id = user.department
 
         task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, department_id=department_id)
         try:
@@ -52,13 +61,20 @@ class TasksService(BaseService):
             task_id: int,
             title: str,
             description: str | None,
-            department_id: int | None,
             attachments: list[UploadFile] | None,
             old_attachments_id_from_front: list[int],
+            department_id: int | None = None,
             executor_ids: list[int] = []
     ):
-        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, department_id=department_id)
+        user: UserOutSchema = await self.db.users.get_one(id=user_id)
 
+        if user.status != "ADMIN" and not user.department:
+            raise HasNotRightsToTaskException
+
+        if not department_id:
+            department_id = user.department
+
+        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, department_id=department_id)
         task = await self.db.tasks.edit(task_data, exclude_unset=True, id=task_id)
 
         await self.update_executors_task(executor_ids=executor_ids, task_id=task_id)

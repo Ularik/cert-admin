@@ -1,8 +1,9 @@
 from fastapi import UploadFile
+from sqlalchemy.orm import undefer
 
 from src.models.tasks import TaskDocuments
 from src.repositories.base import BaseRepository
-from src.schemas.tasks import DocumentLiteSchema
+from src.schemas.tasks import DocumentLiteSchema, DocumentOutSchema
 from sqlalchemy import insert, select
 
 
@@ -42,7 +43,6 @@ class TasksDocumentRepository(BaseRepository):
                 "file_data": file_bytes,
                 **kwargs,
             })
-
             existing_filenames.add(file.filename)
 
         if docs_to_insert:
@@ -57,19 +57,34 @@ class TasksDocumentRepository(BaseRepository):
 
     async def update_documents(
             self,
-            old_docs_id_from_front: list[DocumentLiteSchema],
+            old_docs_id_from_front: list[int],
             new_documents: list[UploadFile],
             **kwargs
     ) -> list[DocumentLiteSchema]:
         actual_old_docs: list[DocumentLiteSchema] = await self.get_filtered_objects(**kwargs)
 
-        delete_old_docs = (
-                set(map(lambda x: x.id, actual_old_docs))
+        actual_old_ids = set(map(lambda x: x.id, actual_old_docs))
+        delete_old_docs_ds = (
+                actual_old_ids
                 -
                 set(old_docs_id_from_front)
         )
-        if delete_old_docs:
-            filter = self.model.id.in_(delete_old_docs)
+        keep_ids = actual_old_ids & set(old_docs_id_from_front)
+        remaining_old_docs = [doc for doc in actual_old_docs if doc.id in keep_ids]
+
+        if delete_old_docs_ds:
+            filter = self.model.id.in_([*delete_old_docs_ds])
             await self.delete_bulk(filter, **kwargs)
 
-        return await self.add_documents(new_documents)
+        new_docs = await self.add_documents(new_documents, **kwargs)
+        return [*remaining_old_docs, *new_docs]
+
+    async def download_document(self, document_id: int):
+        query = (
+            select(self.model)
+            .options(undefer(self.model.file_data))
+            .filter_by(id=document_id)
+        )
+        result = await self.session.execute(query)
+        document = result.scalar_one_or_none()
+        return DocumentOutSchema.model_validate(document)

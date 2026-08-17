@@ -60,11 +60,11 @@ async def put_task(
 async def patch_task(
         db: DBDep,
         id: int,
-        executor_ids: list[int] = Body(...),
+        executor_ids: list[int] = Body(..., embed=True),
 ):
     await TasksService(db).update_executors_task(executor_ids, task_id=id)
     # уведомить исполнителей
-    pass
+
 
 @router.post("/{id}/tasks_reply")
 async def response_on_task(

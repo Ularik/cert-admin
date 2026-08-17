@@ -3,6 +3,7 @@ from src.routers.dependencies import get_admin_user, get_head_user
 from src.routers.admin.main import router as admin_router
 from src.routers.head.main import router as head_router
 from src.routers.users import router as user_router
+from src.routers.tasks import router as router_tasks
 from src.routers.departments import router as departments_router
 from src.logging_conf.logging_conf import setup_logging
 from src.exceptions.exception_handlers import register_exception_handlers
@@ -31,5 +32,6 @@ app.include_router(head_router,
 
 app.include_router(user_router)
 app.include_router(departments_router)
+app.include_router(router_tasks)
 
 register_exception_handlers(app)

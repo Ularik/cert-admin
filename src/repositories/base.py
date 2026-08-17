@@ -67,7 +67,7 @@ class BaseRepository:
             .values(**data.model_dump(exclude_unset=exclude_unset))
             .returning(self.model)
         )
-
+        print(query.compile(compile_kwargs={"literal_binds": True}))
         result = await self.session.execute(query)
         try:
             return self.schema.model_validate(result.scalar_one())

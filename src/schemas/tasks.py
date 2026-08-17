@@ -9,15 +9,15 @@ class TaskDocumentAddSchema(BaseModel):
     task_id: int
 
 
-class TaskDocumentOutSchema(TaskDocumentAddSchema):
-    id: int
-    model_config = ConfigDict(from_attributes=True, extra="ignore")
-
-
 class DocumentLiteSchema(BaseModel):
     id: int
     filename: str
     model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+
+class DocumentOutSchema(DocumentLiteSchema):
+    mime_type: str
+    file_data: bytes
 
 
 class TaskCreateUpdateSchema(BaseModel):

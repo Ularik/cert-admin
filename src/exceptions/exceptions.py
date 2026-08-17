@@ -34,5 +34,8 @@ class HasNotRightsException(Exception):
         super().__init__(*args, **kwargs)
 
 
+class DependsDepartmentException(HasNotRightsException):
+    detail = 'Сначал нужно определить свой отдел'
+
 class HasNotRightsToTaskException(HasNotRightsException):
     detail = 'У вас недостаточно прав для этой задачи'

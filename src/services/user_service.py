@@ -1,5 +1,6 @@
 from src.exceptions.exceptions import UniqueObjIsExistException
-from src.schemas.users import UserLoginSchema, UserInCookiesSchema, UsersRequestSchema, UserOutSchema, UserAddSchema
+from src.schemas.users import UserLoginSchema, UserInCookiesSchema, UsersRequestSchema, UserOutSchema, UserAddSchema, \
+    UserUpdateSchema
 from src.services.base import BaseService
 from src.services.auth import AuthService
 from fastapi import HTTPException
@@ -18,6 +19,12 @@ class UserService(BaseService):
         access_token = await AuthService().create_access_token(payload)
         return access_token
 
+    async def set_department(self, user_id: int, department_id: int) -> UserOutSchema:
+        data = UserUpdateSchema(department=department_id)
+        user = await self.db.users.edit(data, exclude_unset=True, id=user_id)
+        await self.db.save()
+        return user
+
     async def create_user(self, data: UsersRequestSchema) -> UserOutSchema:
         hashed_password = await AuthService().hash_pswd(data.password)
 
@@ -35,6 +42,8 @@ class UserService(BaseService):
         except UniqueObjIsExistException as err:
             raise HTTPException(status_code=409, detail=err.detail)
 
+    async def get_me(self, id: int) -> UserOutSchema:
+        return await self.db.users.get_one(id=id)
 
     async def get_users(self):
         return await self.db.users.get_objects()

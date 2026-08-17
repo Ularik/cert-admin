@@ -3,7 +3,7 @@ from src.models.users import Users
 from src.models.users_tasks import UsersTasks
 from src.schemas.users import UserHashedPswdSchema, UserOutSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, update
 
 
 class UsersRepository(BaseRepository):

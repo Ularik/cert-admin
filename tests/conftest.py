@@ -39,15 +39,15 @@ async def test_user(setup_database, ac):
                 "password": title
             }
         )
-        user = UserOutSchema.model_validate(**response.json())
-        assert user.username
+        user = response.json()
+        assert user['username']
         return user
 
     return wrapper
 
 @pytest.fixture(scope="function", autouse=False)
 async def test_department(setup_database, admin_ac):
-    async def wrapper(title: str = "test_department") -> DepartmentsOutSchema:
+    async def wrapper(title: str = "test_department"):
         response = await admin_ac.post(
             "/admin/departments/",
             json={
@@ -55,7 +55,7 @@ async def test_department(setup_database, admin_ac):
                 "description": title,
             }
         )
-        department = DepartmentsOutSchema.model_validate(**response.json())
+        department = response.json()
         return department
 
     return wrapper

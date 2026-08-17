@@ -1,9 +1,20 @@
 import io
 import uuid
+from docx import Document
 
-import pytest
+def make_real_docx_file(filename="task1.docx", text="Test document content"):
+    doc = Document()
+    doc.add_paragraph(text)
 
-pytestmark = pytest.mark.asyncio
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    return (
+        filename,
+        buffer,
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
 
 
 def unique_title(prefix: str = "task") -> str:
@@ -15,7 +26,7 @@ def make_upload_file(filename="file.txt", content=b"hello world"):
 
 
 class TestCreateTask:
-    async def test_create_task_max(self, ac, test_department, test_user):
+    async def test_create_task_max(self, admin_ac, test_department, test_user):
         department = await test_department(title="test_department")
         executor = await test_user(title="executor")
         title = unique_title()
@@ -23,72 +34,75 @@ class TestCreateTask:
         body = {
             "title": title,
             "description": "some description",
-            "department_id": department.id,
-            "executor_ids": [executor.id],  # было executors_ids — опечатка
+            "department_id": department['id'],
+            "executor_ids": [executor['id']],
         }
 
-        response = await ac.post(
-            "/tasks/",
+        files = [
+            ("attachments", make_upload_file("report.pdf", b"pdf content")),
+            ("attachments", make_real_docx_file("report.docx")),
+        ]
+
+        response = await admin_ac.post(
+            "/admin/tasks/",
             data=body,
-            files={"attachments": make_upload_file()},
+            files=files,
         )
 
-        assert response.status_code == 200, response.text
-        assert response.json()["title"] == title
+        assert response.status_code == 200
+        res = response.json()
+        assert len(res["attachments"]) == 2
 
-    # async def test_create_task_missing_title_returns_422(self, ac):
-    #     response = await ac.post("/tasks/", data={"description": "no title here"})
-    #     assert response.status_code == 422
-    #
-    # async def test_create_task_with_nonexistent_executor_returns_error(self, ac):
-    #     title = unique_title()
-    #     response = await ac.post(
-    #         "/tasks/",
-    #         data={"title": title, "executor_ids": [999_999_999]},
-    #     )
-    #     assert response.status_code == 400
-    #
-    # async def test_create_task_with_attachment(self, ac):
-    #     title = unique_title()
-    #     response = await ac.post(
-    #         "/tasks/",
-    #         data={"title": title},
-    #         files={"attachments": make_upload_file()},
-    #     )
-    #     assert response.status_code == 200, response.text
-    #
-    # async def test_create_task_duplicate_title_returns_error(self, ac):
-    #     """title у Tasks unique=True — повторное создание с тем же title должно падать."""
-    #     title = "Повторный заголовок"
-    #     first = await ac.post("/tasks/", data={"title": title})
-    #     assert first.status_code == 200, first.text
-    #
-    #     second = await ac.post("/tasks/", data={"title": title})
-    #     assert second.status_code == 400
-    #
-    # async def test_create_task_with_department(self, ac, departments_create_1_2):
-    #     title = unique_title()
-    #     departments: list[int] = await departments_create_1_2()
-    #
-    #     response = await ac.post(
-    #         "/tasks/",
-    #         data={"title": title, "department_id": departments[1]},
-    #     )
-    #
-    #     assert response.status_code == 200, response.text
-    #     assert response.json()["department_id"] == departments[1]  # было захардкожено == 1
+
+    async def test_create_task_missing_title_returns_422(self, admin_ac):
+        response = await admin_ac.post("/admin/tasks/", data={"description": "no title here"})
+        assert response.status_code == 422
+
+    async def test_create_task_with_nonexistent_executor_returns_error(self, admin_ac):
+        title = unique_title()
+        response = await admin_ac.post(
+            "/admin/tasks/",
+            data={"title": title, "executor_ids": [999_999_999]},
+        )
+        assert response.status_code == 400
+
+    async def test_create_task_with_duplicate_attachment(self, admin_ac):
+        title = unique_title()
+        files = [
+            ("attachments", make_real_docx_file("report.docx")),
+            ("attachments", make_real_docx_file("report.docx")),
+            ("attachments", make_real_docx_file("report.docx")),
+        ]
+        response = await admin_ac.post(
+            "/admin/tasks/",
+            data={"title": title},
+            files=files,
+        )
+        assert response.status_code == 200
+        res = response.json()
+        print(res['attachments'])
+        assert len(res['attachments']) == 1
+
+    async def test_create_task_duplicate_title_returns_error(self, admin_ac):
+        """title у Tasks unique=True — повторное создание с тем же title должно падать."""
+        title = "Повторный заголовок"
+        first = await admin_ac.post("/admin/tasks/", data={"title": title})
+        assert first.status_code == 200, first.text
+
+        second = await admin_ac.post("/admin/tasks/", data={"title": title})
+        assert second.status_code == 400
 
 
 # ---------------------------------------------------------------------------
 # GET /tasks/
 # ---------------------------------------------------------------------------
 
-# class TestGetTasks:
-#     async def test_get_tasks_success(self, ac):
-#         await ac.post("/tasks/", data={"title": unique_title()})
-#         response = await ac.get("/tasks/", params={"limit": 10, "offset": 0})
-#         assert response.status_code == 200, response.text
-#
+class TestGetTasks:
+    async def test_get_tasks_success(self, admin_ac):
+        await admin_ac.post("/admin/tasks/", data={"title": unique_title()})
+        response = await admin_ac.get("/admin/tasks/", params={"limit": 10, "offset": 0})
+        assert response.status_code == 200
+
 #     async def test_get_tasks_limit_out_of_range_returns_422(self, ac):
 #         # QueryParamsSchema: limit = Field(10, gt=0, lt=20)
 #         response = await ac.get("/tasks/", params={"limit": 50})
@@ -106,29 +120,39 @@ class TestCreateTask:
 # Секция была полностью закомментирована в исходнике — оставляю как есть,
 # похоже на осознанный временный disable. Если она нужна, раскомментируйте
 # и синтаксис/логика там валидны без изменений.
-#
-# class TestUpdateTask:
-#     async def test_update_task_success(self, ac):
-#         create_resp = await ac.post("/tasks/", data={"title": unique_title()})
-#         task_id = create_resp.json()["id"]
-#
-#         new_title = unique_title("updated")
-#         response = await ac.put(
-#             f"/tasks/{task_id}",
-#             data={"title": new_title, "description": "new description"},
-#         )
-#
-#         assert response.status_code == 200, response.text
-#         body = response.json()
-#         assert body["title"] == new_title
-#         assert body["description"] == "new description"
-#
-#     async def test_update_task_missing_title_returns_422(self, ac):
-#         create_resp = await ac.post("/tasks/", data={"title": unique_title()})
-#         task_id = create_resp.json()["id"]
-#
-#         response = await ac.put(f"/tasks/{task_id}", data={})
-#         assert response.status_code == 422
+
+class TestUpdateTask:
+    async def test_update_task(self, admin_ac):
+        create_resp = await admin_ac.post("/admin/tasks/",
+                                          data={"title": unique_title()},
+                                          files=[
+                                              ("attachments", make_real_docx_file("test.docx")),
+                                              ("attachments", make_real_docx_file("test2.docx")),
+                                          ]
+                                          )
+        response = create_resp.json()
+        assert create_resp.status_code == 200
+        task_id = response["id"]
+        old_attachment = response['attachments'][0]
+
+        new_title = unique_title("updated")
+        response = await admin_ac.put(
+            f"/admin/tasks/{task_id}",
+            data={
+                "title": new_title,
+                "old_attachments_datas": [old_attachment['id']]
+            },
+            files=[
+                ("attachments", make_real_docx_file("new_test.docx")),
+                ("attachments", make_real_docx_file(old_attachment['filename'])), # check on duplicate
+            ]
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["title"] == new_title
+        print(body["attachments"])
+        assert len(body["attachments"]) == 2
 #
 #     async def test_update_task_invalid_id_type_returns_422(self, ac):
 #         response = await ac.put("/tasks/not-an-int", data={"title": "x"})
@@ -143,61 +167,43 @@ class TestCreateTask:
 # PATCH /tasks/{id}
 # ---------------------------------------------------------------------------
 
-# class TestUpdateExecutors:
-#     async def test_patch_task_executors_success(self, ac, add_user):
-#         create_resp = await ac.post("/tasks/", data={"title": unique_title()})
-#         task_id = create_resp.json()["id"]
-#
-#         executor_1 = await add_user()
-#
-#         response = await ac.patch(
-#             f"/tasks/{task_id}",
-#             json={"executor_ids": [executor_1["id"]]},
-#         )
-#         assert response.status_code == 200, response.text
-#
-#     async def test_patch_task_missing_body_returns_422(self, ac):
-#         create_resp = await ac.post("/tasks/", data={"title": unique_title()})
-#         task_id = create_resp.json()["id"]
-#
-#         response = await ac.patch(f"/tasks/{task_id}", json={})
-#         assert response.status_code == 422
-#
-#     async def test_patch_task_invalid_id_type_returns_422(self, ac):
-#         response = await ac.patch("/tasks/not-an-int", json={"executor_ids": []})
-#         assert response.status_code == 422
-#
-#     async def test_patch_task_returns_none_body(self, ac):
-#         """
-#         В текущей реализации ручка ничего явно не возвращает (return отсутствует,
-#         стоит "pass" после комментария) — тело ответа будет null.
-#         Если добавите return в ручке, этот тест нужно обновить.
-#         """
-#         create_resp = await ac.post("/tasks/", data={"title": unique_title()})
-#         task_id = create_resp.json()["id"]
-#
-#         response = await ac.patch(f"/tasks/{task_id}", json={"executor_ids": []})
-#
-#         assert response.status_code == 200
-#         assert response.json() is None
+class TestUpdateExecutors:
+    async def test_patch_task_executors_success(self, admin_ac, test_user):
+        create_resp = await admin_ac.post("/admin/tasks/", data={"title": unique_title()})
+        task_id = create_resp.json()["id"]
+
+        executor_1 = await test_user(title='test')
+
+        response = await admin_ac.patch(
+            f"/admin/tasks/{task_id}",
+            json={"executor_ids": [executor_1["id"]]},
+        )
+        assert response.status_code == 200
 
 
 # ---------------------------------------------------------------------------
 # POST /tasks/{id}/tasks_reply
 # ---------------------------------------------------------------------------
 
-# class TestCreateReply:
-#     async def test_create_reply_success(self, ac):
-#         create_resp = await ac.post("/tasks/", data={"title": unique_title()})
-#         task_id = create_resp.json()["id"]
-#
-#         response = await ac.post(
-#             f"/tasks/{task_id}/tasks_reply",
-#             data={"content": "done"},
-#         )
-#         assert response.status_code == 200, response.text
-#         assert response.json()["content"] == "done"
-#
+class TestCreateReply:
+    async def test_create_reply_success(self, admin_ac):
+        create_resp = await admin_ac.post("/admin/tasks/", data={"title": unique_title()})
+
+        assert create_resp.status_code == 200
+        task_id = create_resp.json()["id"]
+
+        files = [
+            ('attachments', make_real_docx_file('response.docx'))
+        ]
+
+        response = await admin_ac.post(
+            f"/admin/tasks/{task_id}/tasks_reply",
+            data={"content": "done"},
+            files=files
+        )
+        assert response.status_code == 200
+        assert response.json()["content"] == "done"
+
 #     async def test_create_reply_missing_content_returns_422(self, ac):
 #         create_resp = await ac.post("/tasks/", data={"title": unique_title()})
 #         task_id = create_resp.json()["id"]

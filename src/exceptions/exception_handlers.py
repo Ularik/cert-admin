@@ -11,7 +11,7 @@ def register_exception_handlers(app):
 
     @app.exception_handler(exceptions.UserNotFoundException)
     async def not_found_handler(request: Request, exc: exceptions.UserNotFoundException):
-        raise HTTPException(status_code=404, detail=exc.detail)
+        raise HTTPException(status_code=400, detail=exc.detail)
 
     @app.exception_handler(exceptions.TaskAlreadyExistException)
     async def exist_exception_handler(request: Request, exc: exceptions.TaskAlreadyExistException):

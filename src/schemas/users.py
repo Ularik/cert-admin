@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Literal
-from src.models.users import UserStatus
 
 
 class UsersRequestSchema(BaseModel):
@@ -33,10 +32,17 @@ class UserOutSchema(BaseModel):
     username: str
     last_name: str
     status: str
+    department: int | None
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserUpdateSchema(BaseModel):
+    username: str | None = None
+    last_name: str | None = None
+    status: str | None = None
+    department: int | None = None
 
 
 class UserHashedPswdSchema(UserAddSchema):
     id: int
-
     model_config = ConfigDict(from_attributes=True)

@@ -6,3 +6,4 @@ pyjwt
 pytest
 pytest-dotenv
 pytest-asyncio
+python-docx
