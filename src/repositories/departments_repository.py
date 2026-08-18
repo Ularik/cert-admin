@@ -1,6 +1,6 @@
 from src.repositories.base import BaseRepository
 from src.models.departments import Departments
-from src.schemas.departments import DepartmentsOutSchema, DepartmentCreateSchema
+from src.schemas.departments import DepartmentsOutSchema
 
 
 class DepartmentsRepository(BaseRepository):

@@ -21,8 +21,8 @@ async def add_user(db: DBDep, data: UsersRequestSchema):
     return res
 
 @router.get("/")
-async def get_users(db: DBDep):
-    return await UserService(db).get_users()
+async def get_users(db: DBDep, department_id: int | None = None):
+    return await UserService(db).get_users(department=department_id)
 
 
 @router.get("/roles")

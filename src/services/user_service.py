@@ -45,5 +45,5 @@ class UserService(BaseService):
     async def get_me(self, id: int) -> UserOutSchema:
         return await self.db.users.get_one(id=id)
 
-    async def get_users(self):
-        return await self.db.users.get_objects()
+    async def get_users(self, **kwargs):
+        return await self.db.users.get_filtered_objects(**kwargs)

@@ -50,7 +50,7 @@ async def test_get_me_authorized(ac: AsyncClient, test_user):
     response = await ac.get("/users/me")
 
     assert response.status_code == 200
-    assert "user_id" in response.json()
+    assert "id" in response.json()
 
 
 async def test_logout(admin_ac: AsyncClient):

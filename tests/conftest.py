@@ -1,3 +1,5 @@
+from sqlalchemy import text
+
 from src.schemas.users import UserOutSchema
 from src.database import engine_null_pool, Base
 from src.main import app
@@ -14,12 +16,32 @@ async def check_mode():
     assert settings.MODE == "TEST"
 
 
-@pytest.fixture(scope="function", autouse=True)
-async def setup_database(check_mode):  # очередность выполнения
-    print("-------Fixtures start-----------")
+# 1. Сбрасываем и создаем схему один раз на всю сессию тестов
+@pytest.fixture(scope="session", autouse=True)
+async def setup_database_schema(check_mode):
     async with engine_null_pool.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        # Полностью очищаем схему public каскадом, обходя любые циклические FK
+        await conn.execute(text("DROP SCHEMA public CASCADE;"))
+        await conn.execute(text("CREATE SCHEMA public;"))
+        # Создаем все таблицы с нуля
         await conn.run_sync(Base.metadata.create_all)
+
+    yield
+
+    async with engine_null_pool.begin() as conn:
+        await conn.execute(text("DROP SCHEMA public CASCADE;"))
+        await conn.execute(text("CREATE SCHEMA public;"))
+
+
+# 2. Быстро очищаем данные перед каждым тестом
+@pytest.fixture(scope="function", autouse=True)
+async def setup_database():
+    async with engine_null_pool.begin() as conn:
+        table_names = ", ".join([f'"{table.name}"' for table in Base.metadata.sorted_tables])
+        if table_names:
+            await conn.execute(
+                text(f"TRUNCATE TABLE {table_names} RESTART IDENTITY CASCADE;")
+            )
 
 
 @pytest.fixture(scope="function")

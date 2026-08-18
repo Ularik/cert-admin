@@ -20,12 +20,22 @@ class Departments(Base):
     description: Mapped[str | None]
     # Внешние ключи на пользователей
     head_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey(
+            "users.id",
+            ondelete="SET NULL",
+            use_alter=True,
+            name="fk_departments_head_id_users"
+        ),
         nullable=True,
         comment="Начальник отдела"
     )
     deputy_head_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey(
+            "users.id",
+            ondelete="SET NULL",
+            use_alter=True,
+            name="fk_departments_deputy_head_id_users"
+        ),
         nullable=True,
         comment="Заместитель начальника отдела"
     )

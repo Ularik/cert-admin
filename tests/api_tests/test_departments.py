@@ -1,5 +1,5 @@
 from httpx import AsyncClient
-from src.schemas.departments import DepartmentCreateSchema
+from src.schemas.departments import DepartmentCreateUpdateSchema
 
 
 async def test_get_departments(ac: AsyncClient):
@@ -16,14 +16,14 @@ async def test_403_post_dep(ac: AsyncClient, test_user):
     }
     await ac.post("/users/login", json=payload)
 
-    payload = DepartmentCreateSchema(title="test dep", description="test descript")
+    payload = DepartmentCreateUpdateSchema(title="test dep", description="test descript")
     res = await ac.post("/admin/departments/", json=payload.model_dump())
     assert res.status_code == 403
 
 
 async def test_201_post_dep(admin_ac: AsyncClient):
 
-    payload = DepartmentCreateSchema(title="test dep", description="test descript")
+    payload = DepartmentCreateUpdateSchema(title="test dep", description="test descript")
     res = await admin_ac.post("/admin/departments/", json=payload.model_dump())
 
     assert res.status_code == 200

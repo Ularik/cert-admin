@@ -1,9 +1,11 @@
+from src.exceptions.exceptions import UserNotFoundException
 from src.repositories.base import BaseRepository
 from src.models.users import Users
 from src.models.users_tasks import UsersTasks
-from src.schemas.users import UserHashedPswdSchema, UserOutSchema, UserAddSchema
+from src.schemas.users import UserHashedPswdSchema, UserOutSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
 from sqlalchemy import select, insert, update
+from typing import Literal
 
 
 class UsersRepository(BaseRepository):
@@ -22,3 +24,13 @@ class UsersRepository(BaseRepository):
             insert(UsersTasks)
             .values(**data.model_dump())
         )
+
+    async def update_status(self, users_ids: list[int], status: Literal["ADMIN", "HEAD", "USER"]):
+        query = (
+            update(self.model)
+            .filter(self.model.id.in_(users_ids))
+            .values(status=status)
+            .returning(self.model)
+        )
+        await self.session.execute(query)
+
