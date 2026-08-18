@@ -1,7 +1,7 @@
 from src.repositories.base import BaseRepository
 from src.models.users import Users
 from src.models.users_tasks import UsersTasks
-from src.schemas.users import UserHashedPswdSchema, UserOutSchema
+from src.schemas.users import UserHashedPswdSchema, UserOutSchema, UserAddSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
 from sqlalchemy import select, insert, update
 
