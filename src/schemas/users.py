@@ -2,10 +2,11 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Literal
 
 
-class UsersRequestSchema(BaseModel):
+class UsersAuthSchema(BaseModel):
     username: str
     last_name: str
-    status: Literal["ADMIN", "HEAD", "USER"] = Field(default="USER")
+    status: Literal["ADMIN", "HEAD", "DEPUTY", "USER"] = Field(default="USER")
+    department: int | None = None
     password: str
 
 
@@ -24,7 +25,10 @@ class UserAddSchema(BaseModel):
     username: str
     last_name: str
     status: str
+    department: int | None = None
     hashed_password: bytes
+
+    model_config = ConfigDict(from_attributes=True, extra='ignore')
 
 
 class UserOutSchema(BaseModel):
@@ -34,6 +38,18 @@ class UserOutSchema(BaseModel):
     status: str
     department: int | None
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserWithDepartmentOut(BaseModel):
+    id: int
+    username: str
+    last_name: str | None = None
+    status: str
+    member_department: str | None = None     # Где работает
+    head_of_department: str | None = None      # Где начальник
+    deputy_head_of_department: str | None = None # Где зам
+
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 
 class UserUpdateSchema(BaseModel):

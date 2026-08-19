@@ -1,5 +1,5 @@
 from src.exceptions.exceptions import UniqueObjIsExistException
-from src.schemas.users import UserLoginSchema, UserInCookiesSchema, UsersRequestSchema, UserOutSchema, UserAddSchema, \
+from src.schemas.users import UserLoginSchema, UserInCookiesSchema, UsersAuthSchema, UserOutSchema, UserAddSchema, \
     UserUpdateSchema
 from src.services.base import BaseService
 from src.services.auth import AuthService
@@ -25,13 +25,14 @@ class UserService(BaseService):
         await self.db.save()
         return user
 
-    async def create_user(self, data: UsersRequestSchema) -> UserOutSchema:
+    async def create_user(self, data: UsersAuthSchema) -> UserOutSchema:
         hashed_password = await AuthService().hash_pswd(data.password)
 
         new_data = UserAddSchema(
             username=data.username,
             last_name=data.last_name,
             status=data.status,
+            department=data.department,
             hashed_password=hashed_password,
         )
 
@@ -45,5 +46,5 @@ class UserService(BaseService):
     async def get_me(self, id: int) -> UserOutSchema:
         return await self.db.users.get_one(id=id)
 
-    async def get_users(self, **kwargs):
-        return await self.db.users.get_filtered_objects(**kwargs)
+    async def get_users(self, department_id: int = None):
+        return await self.db.users.get_user_full_data(department_id=department_id)

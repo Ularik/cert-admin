@@ -11,6 +11,8 @@ class ObjectNotFoundException(NoResultException):
 class DepartmentNotFoundException(ObjectNotFoundException):
     detail = "Отдел не найден"
 
+class TaskNotFoundException(ObjectNotFoundException):
+    detail = "Задача не найден"
 
 class UserNotFoundException(NoResultException):
     detail = "Сотрудник не найден"

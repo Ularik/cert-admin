@@ -1,11 +1,12 @@
 from src.exceptions.exceptions import ObjectNotFoundException, DepartmentNotFoundException, UniqueObjIsExistException, \
-    TaskAlreadyExistException, HasNotRightsToTaskException, UserNotFoundException, DependsDepartmentException
+    TaskAlreadyExistException, HasNotRightsToTaskException, UserNotFoundException, DependsDepartmentException, \
+    TaskNotFoundException
 from src.routers.dependencies import QueryParamsSchema
 from src.schemas.users import UserOutSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
 from src.services.base import BaseService
 from src.schemas.tasks import (TaskCreateUpdateSchema, TaskOutSchema,
-                               TaskLiteOutSchema)
+                               TaskLiteOutSchema, TaskApiResponseSchema)
 from fastapi import UploadFile
 from src.models.users import Users
 
@@ -89,10 +90,16 @@ class TasksService(BaseService):
         return new_task_full_out
 
 
-    async def get_tasks(self, query_params: QueryParamsSchema) -> list[TaskOutSchema]:
-        tasks: list[TaskOutSchema] = await self.db.tasks.get_filtered_tasks(limit=query_params.limit,
+    async def get_tasks(self, query_params: QueryParamsSchema) -> TaskApiResponseSchema:
+        tasks: TaskApiResponseSchema = await self.db.tasks.get_filtered_tasks(limit=query_params.limit,
                                                                                   offset=query_params.offset)
         return tasks
+
+    async def get_one(self, task_id: int) -> TaskOutSchema:
+        task: TaskApiResponseSchema = await self.db.tasks.get_filtered_tasks(id=task_id)
+        if not task.items:
+            raise TaskNotFoundException
+        return task.items[0]
 
     async def update_executors_task(self, executor_ids: list[int], task_id: int) -> None:
         await self.db.tasks_users.set_user_task(executors_ids=executor_ids, task_id=task_id)

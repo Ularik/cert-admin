@@ -40,5 +40,7 @@ class TaskOutSchema(TaskCreateUpdateSchema):
     created_at: datetime
     updated_at: datetime
 
-# class Task
+class TaskApiResponseSchema(BaseModel):
+    total: int
+    items: list[TaskOutSchema]
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Response, Body
-from src.schemas.users import UsersRequestSchema, UserLoginSchema
+from src.schemas.users import UsersAuthSchema, UserLoginSchema
 from src.services.user_service import UserService
 from src.routers.dependencies import DBDep, AuthUserDep
 from src.models.users import UserStatus
@@ -16,13 +16,13 @@ async def login_user(db: DBDep, data: UserLoginSchema, response: Response):
 
 
 @router.post("/", summary="Добавление нового пользователя")
-async def add_user(db: DBDep, data: UsersRequestSchema):
+async def add_user(db: DBDep, data: UsersAuthSchema):
     res = await UserService(db).create_user(data)
     return res
 
 @router.get("/")
 async def get_users(db: DBDep, department_id: int | None = None):
-    return await UserService(db).get_users(department=department_id)
+    return await UserService(db).get_users(department_id=department_id)
 
 
 @router.get("/roles")

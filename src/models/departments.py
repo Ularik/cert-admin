@@ -26,6 +26,7 @@ class Departments(Base):
             use_alter=True,
             name="fk_departments_head_id_users"
         ),
+        unique=True,
         nullable=True,
         comment="Начальник отдела"
     )
@@ -36,6 +37,7 @@ class Departments(Base):
             use_alter=True,
             name="fk_departments_deputy_head_id_users"
         ),
+        unique=True,
         nullable=True,
         comment="Заместитель начальника отдела"
     )
@@ -43,11 +45,11 @@ class Departments(Base):
     # Relationship для обратного обращения
     head: Mapped[Optional["Users"]] = relationship(
         foreign_keys=[head_id],
-        backref="managed_department"
+        back_populates="managed_department"
     )
     deputy_head: Mapped[Optional["Users"]] = relationship(
         foreign_keys=[deputy_head_id],
-        backref="deputy_managed_department"
+        back_populates="deputy_managed_department"
     )
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.timezone('Asia/Bishkek', func.now()))

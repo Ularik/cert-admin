@@ -62,3 +62,9 @@ async def download_reply_document(doc_id: int, db: DBDep):
 async def get_tasks(db: DBDep, query_params: QueryParamsDep):
     res = await TasksService(db).get_tasks(query_params)
     return res
+
+
+@router.get("/{id}")
+async def get_task_detail(db: DBDep, id: int):
+    res = await TasksService(db).get_one(task_id=id)
+    return res

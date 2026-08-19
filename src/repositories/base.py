@@ -110,8 +110,14 @@ class BaseRepository:
             else:
                 raise err
 
-    async def edit_bulk(self, data: BaseModel, **filters):
-        query = update(self.model).filter_by(**filters).values(**data).returning(self.model)
+    async def edit_bulk(self, data: BaseModel, *args, **kwargs):
+        query = (
+            update(self.model)
+            .values(**data.model_dump(exclude_unset=True))
+            .filter(*args)
+            .filter_by(**kwargs)
+            .returning(self.model)
+        )
 
         result = await self.session.execute(query)
         return result.scalars().all()

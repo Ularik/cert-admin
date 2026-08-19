@@ -11,5 +11,10 @@ async def get_departments(db: DBDep):
     return await DepartmentService(db).get_department()
 
 
-
+@router.get("/{id}")
+async def get_departments(
+        db: DBDep,
+        id: int
+):
+    return await DepartmentService(db).get_one_department(department_id=id)
 
