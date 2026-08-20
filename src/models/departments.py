@@ -18,6 +18,7 @@ class Departments(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(100), unique=True)
     description: Mapped[str | None]
+    tasks: Mapped[list["Tasks"]] = relationship(secondary="departments_tasks", back_populates="departments")
     # Внешние ключи на пользователей
     head_id: Mapped[int | None] = mapped_column(
         ForeignKey(

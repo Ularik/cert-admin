@@ -21,6 +21,11 @@ class DepartmentCreateUpdateSchema(BaseModel):
         return self
 
 
+class DepartmentLiteOutSchema(BaseModel):
+    id: int
+    title: str
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+
 class DepartmentsOutSchema(DepartmentCreateUpdateSchema):
     id: int
     created_at: datetime

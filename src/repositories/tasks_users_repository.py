@@ -1,5 +1,3 @@
-from sqlalchemy import update
-
 from src.models.users_tasks import UsersTasks
 from src.schemas.users_tasks import UsersConnectTaskSchema
 from src.repositories.base import BaseRepository
@@ -9,8 +7,12 @@ class UsersTasksRepository(BaseRepository):
     model = UsersTasks
     schema = UsersConnectTaskSchema
 
-    async def connect_user_task(self, data_list: list[UsersConnectTaskSchema]):
-        await super().add_bulk(data_list)
+    async def connect_user_task(self, task_id: int, executor_ids: list[int]):
+        tasks_executors_data_list = [
+            UsersConnectTaskSchema(user_id=user_id, task_id=task_id)
+            for user_id in executor_ids
+        ]
+        await super().add_bulk(tasks_executors_data_list)
 
     async def set_user_task(self, task_id: int, executors_ids: list[int]):
         old_users_tasks: list[UsersConnectTaskSchema] = await self.get_filtered_objects(task_id=task_id)

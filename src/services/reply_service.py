@@ -15,8 +15,7 @@ class ReplyService(BaseService):
             content: str,
             attachments: list[UploadFile]
     ):
-        user_task_data = UsersConnectTaskSchema(task_id=task_id, user_id=executor.user_id)
-        await self.db.tasks_users.connect_user_task(data_list=[user_task_data])
+        await self.db.tasks_users.connect_user_task(task_id=task_id, executor_ids=[executor.user_id])
 
         reply_data = ReplyCreateSchema(task_id=task_id, content=content)
         reply: ReplyLiteOutSchema = await self.db.reply_tasks.add_obj(reply_data)

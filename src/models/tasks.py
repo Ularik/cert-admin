@@ -10,9 +10,10 @@ class Tasks(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    author: Mapped["Users"] = relationship()
     title: Mapped[str] = mapped_column(String(255), unique=True)
     description: Mapped[Optional[str]]
-    department_id: Mapped[int | None] = mapped_column(ForeignKey("departments.id", ondelete="SET NULL"))
+    departments: Mapped[list["Departments"]] = relationship(secondary="departments_tasks", back_populates="tasks")
     executors: Mapped[list["Users"]] = relationship(secondary="users_tasks", back_populates="tasks")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

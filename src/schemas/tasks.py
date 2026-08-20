@@ -1,6 +1,8 @@
 from pydantic import BaseModel, ConfigDict
 from fastapi import UploadFile
 from datetime import datetime
+
+from src.schemas.departments import DepartmentsOutSchema, DepartmentLiteOutSchema
 from src.schemas.users import UserOutSchema
 
 
@@ -24,7 +26,6 @@ class TaskCreateUpdateSchema(BaseModel):
     author_id: int
     title: str
     description: str | None = None
-    department_id: int | None = None
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 
@@ -40,7 +41,17 @@ class TaskOutSchema(TaskCreateUpdateSchema):
     created_at: datetime
     updated_at: datetime
 
+
+class TaskAuthorOutSchema(TaskCreateUpdateSchema):
+    id: int
+    author: UserOutSchema
+    departments: list[DepartmentLiteOutSchema]
+    executors: list[UserOutSchema]
+    attachments: list[DocumentLiteSchema]
+    created_at: datetime
+    updated_at: datetime
+
 class TaskApiResponseSchema(BaseModel):
     total: int
-    items: list[TaskOutSchema]
+    items: list[TaskAuthorOutSchema]
 

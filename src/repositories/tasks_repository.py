@@ -1,8 +1,8 @@
 from src.models.tasks import Tasks
 from src.repositories.base import BaseRepository
-from src.schemas.tasks import TaskLiteOutSchema, TaskOutSchema, TaskApiResponseSchema
+from src.schemas.tasks import TaskLiteOutSchema, TaskAuthorOutSchema, TaskApiResponseSchema
 from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 
 class TasksRepository(BaseRepository):
@@ -20,14 +20,17 @@ class TasksRepository(BaseRepository):
         data_query = (
             base_query
             .options(
+                joinedload(self.model.author),
                 selectinload(self.model.attachments),
+                selectinload(self.model.departments),
                 selectinload(self.model.executors)
             )
+            .order_by(self.model.created_at.desc())
             .limit(limit)
             .offset(offset)
         )
         result = await self.session.execute(data_query)
-        items = [TaskOutSchema.model_validate(row) for row in result.scalars()]
+        items = [TaskAuthorOutSchema.model_validate(row) for row in result.scalars()]
 
         return TaskApiResponseSchema(total=total_count, items=items)
 

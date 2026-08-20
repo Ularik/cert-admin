@@ -67,12 +67,17 @@ class BaseRepository:
             .values(**data.model_dump(exclude_unset=exclude_unset))
             .returning(self.model)
         )
-        print(query.compile(compile_kwargs={"literal_binds": True}))
-        result = await self.session.execute(query)
+
         try:
+            result = await self.session.execute(query)
             return self.schema.model_validate(result.scalar_one())
         except NoResultFound:
             raise ObjectNotFoundException
+        except IntegrityError as err:
+            if isinstance(err.orig.__cause__, ForeignKeyViolationError):
+                raise ObjectNotFoundException from err
+            raise
+
 
     async def delete(self, **filters) -> None:
         query = delete(self.model).filter_by(**filters)
@@ -102,6 +107,7 @@ class BaseRepository:
         if conflict_columns:
             query = query.on_conflict_do_nothing(index_elements=conflict_columns)
 
+        print(query.compile(compile_kwargs={"literal_binds": True}))
         try:
             await self.session.execute(query)
         except IntegrityError as err:

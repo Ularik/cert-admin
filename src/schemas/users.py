@@ -45,6 +45,7 @@ class UserWithDepartmentOut(BaseModel):
     username: str
     last_name: str | None = None
     status: str
+    department_id: int | None = None
     member_department: str | None = None     # Где работает
     head_of_department: str | None = None      # Где начальник
     deputy_head_of_department: str | None = None # Где зам

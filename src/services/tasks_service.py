@@ -2,11 +2,12 @@ from src.exceptions.exceptions import ObjectNotFoundException, DepartmentNotFoun
     TaskAlreadyExistException, HasNotRightsToTaskException, UserNotFoundException, DependsDepartmentException, \
     TaskNotFoundException
 from src.routers.dependencies import QueryParamsSchema
+from src.schemas.departments_tasks import DepartmentsConnectTaskSchema
 from src.schemas.users import UserOutSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
 from src.services.base import BaseService
 from src.schemas.tasks import (TaskCreateUpdateSchema, TaskOutSchema,
-                               TaskLiteOutSchema, TaskApiResponseSchema)
+                               TaskLiteOutSchema, TaskApiResponseSchema, TaskAuthorOutSchema)
 from fastapi import UploadFile
 from src.models.users import Users
 
@@ -19,7 +20,7 @@ class TasksService(BaseService):
             title: str,
             description: str | None,
             attachments: list[UploadFile] | None,
-            department_id: int | None = None,
+            departments_ids: list[int] = [],
             executor_ids: list[int] = []
     ) -> TaskOutSchema:
 
@@ -28,28 +29,25 @@ class TasksService(BaseService):
         if user.status != "ADMIN" and not user.department:
             raise DependsDepartmentException
 
-        if not department_id:
-            department_id = user.department
-
-        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, department_id=department_id)
+        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description)
         try:
             new_task: TaskLiteOutSchema = await self.db.tasks.add_obj(task_data)
-        except ObjectNotFoundException:
-            raise DepartmentNotFoundException
         except UniqueObjIsExistException:
             raise TaskAlreadyExistException
 
         documents = await self.db.tasks_documents.add_documents(task_id=new_task.id, documents_files=set(attachments or []))
         executors = await self.db.users.get_filtered_objects(Users.id.in_(executor_ids))
 
-        tasks_executors_data_list = [
-            UsersConnectTaskSchema(user_id=user_id, task_id=new_task.id)
-            for user_id in executor_ids
-        ]
         try:
-            await self.db.tasks_users.connect_user_task(tasks_executors_data_list)
+            await self.db.tasks_users.connect_user_task(task_id=new_task.id, executor_ids=executor_ids)
         except ObjectNotFoundException:
             raise UserNotFoundException
+
+        try:
+            await self.db.task_departments.connect_departments_to_task(task_id=new_task.id, departments_ids=departments_ids)
+        except ObjectNotFoundException:
+            raise DepartmentNotFoundException
+
         await self.db.save()
 
         new_task_full_out = TaskOutSchema(**new_task.model_dump(), attachments=documents, executors=executors)
@@ -64,7 +62,7 @@ class TasksService(BaseService):
             description: str | None,
             attachments: list[UploadFile] | None,
             old_attachments_id_from_front: list[int],
-            department_id: int | None = None,
+            departments_ids: list[int] = [],
             executor_ids: list[int] = []
     ):
         user: UserOutSchema = await self.db.users.get_one(id=user_id)
@@ -72,11 +70,11 @@ class TasksService(BaseService):
         if user.status != "ADMIN" and not user.department:
             raise HasNotRightsToTaskException
 
-        if not department_id:
-            department_id = user.department
-
-        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, department_id=department_id)
-        task = await self.db.tasks.edit(task_data, exclude_unset=True, id=task_id)
+        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description)
+        try:
+            task = await self.db.tasks.edit(task_data, exclude_unset=True, id=task_id)
+        except ObjectNotFoundException:
+            raise DepartmentNotFoundException
 
         await self.update_executors_task(executor_ids=executor_ids, task_id=task_id)
 
@@ -86,16 +84,19 @@ class TasksService(BaseService):
             new_documents=attachments or []
         )
         executors = await self.db.users.get_filtered_objects(Users.id.in_(executor_ids))
+        await self.db.task_departments.connect_departments_to_task(task_id=task_id, departments_ids=departments_ids)
+
         new_task_full_out = TaskOutSchema(**task.model_dump(), attachments=tasks_docs, executors=executors)
+        await self.db.save()
         return new_task_full_out
 
 
     async def get_tasks(self, query_params: QueryParamsSchema) -> TaskApiResponseSchema:
-        tasks: TaskApiResponseSchema = await self.db.tasks.get_filtered_tasks(limit=query_params.limit,
+        resp: TaskApiResponseSchema = await self.db.tasks.get_filtered_tasks(limit=query_params.limit,
                                                                                   offset=query_params.offset)
-        return tasks
+        return resp
 
-    async def get_one(self, task_id: int) -> TaskOutSchema:
+    async def get_one(self, task_id: int) -> TaskAuthorOutSchema:
         task: TaskApiResponseSchema = await self.db.tasks.get_filtered_tasks(id=task_id)
         if not task.items:
             raise TaskNotFoundException

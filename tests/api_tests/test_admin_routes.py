@@ -34,7 +34,7 @@ class TestCreateTask:
         body = {
             "title": title,
             "description": "some description",
-            "department_id": department['id'],
+            "departments_ids": [department['id']],
             "executor_ids": [executor['id']],
         }
 

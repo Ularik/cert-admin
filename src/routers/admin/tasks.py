@@ -12,7 +12,7 @@ async def post_task(
         user: AuthUserDep,
         title: str = Form(...),
         description: str | None = Form(None),
-        department_id: int | None = Form(None),
+        departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([])
     ):
@@ -20,7 +20,7 @@ async def post_task(
         user_id=user.user_id,
         title=title,
         description=description,
-        department_id=department_id,
+        departments_ids=departments_ids,
         attachments=attachments,
         executor_ids=executor_ids
     )
@@ -39,7 +39,7 @@ async def put_task(
         user: AuthUserDep,
         title: str = Form(...),
         description: str | None = Form(None),
-        department_id: int | None = Form(None),
+        departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([]),
         old_attachments_datas: list[int] = Form([])
@@ -49,7 +49,7 @@ async def put_task(
         task_id=id,
         title=title,
         description=description,
-        department_id=department_id,
+        departments_ids=departments_ids,
         attachments=attachments,
         old_attachments_id_from_front=old_attachments_datas,
         executor_ids=executor_ids

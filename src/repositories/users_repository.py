@@ -59,6 +59,7 @@ class UsersRepository(BaseRepository):
                 self.model.username,
                 self.model.last_name,
                 self.model.status,
+                DeptMember.id.label("department_id"),
                 DeptMember.title.label("member_department"),
                 DeptHead.title.label("head_of_department"),
                 DeptDeputy.title.label("deputy_head_of_department"),
