@@ -1,15 +1,17 @@
 from datetime import datetime
 from pydantic import BaseModel, Field, model_validator, ConfigDict
 
+from src.schemas.users import UserOutSchema
 
-class DepartmentCreateUpdateSchema(BaseModel):
+
+class DepartmentRequestCreateUpdateSchema(BaseModel):
     title: str = Field(description="Название отдела")
     description: str | None = Field(description="Описание отдела", default=None)
     head_id: int | None = Field(default=None, description="ID руководителя")
     deputy_head_id: int | None = Field(default=None, description="ID заместителя")
 
     @model_validator(mode="after")
-    def validate_head_and_deputy_different(self) -> "DepartmentCreateUpdateSchema":
+    def validate_head_and_deputy_different(self) -> "DepartmentRequestCreateUpdateSchema":
         if (
             self.head_id is not None
             and self.deputy_head_id is not None
@@ -20,15 +22,25 @@ class DepartmentCreateUpdateSchema(BaseModel):
             )
         return self
 
+class DepartmentCreateUpdateSchema(BaseModel):
+    title: str = Field(description="Название отдела")
+    description: str | None = Field(description="Описание отдела", default=None)
+
 
 class DepartmentLiteOutSchema(BaseModel):
     id: int
     title: str
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
-class DepartmentsOutSchema(DepartmentCreateUpdateSchema):
+class DepartmentsOutSchema(BaseModel):
     id: int
+    title: str = Field(description="Название отдела")
+    description: str | None = Field(description="Описание отдела", default=None)
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class DepartmentsWithHeadsOutSchema(DepartmentsOutSchema):
+    head: UserOutSchema | None = None
+    deputy_head: UserOutSchema | None = None

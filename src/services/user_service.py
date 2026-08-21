@@ -20,7 +20,7 @@ class UserService(BaseService):
         return access_token
 
     async def set_department(self, user_id: int, department_id: int) -> UserOutSchema:
-        data = UserUpdateSchema(department=department_id)
+        data = UserUpdateSchema(department_id=department_id)
         user = await self.db.users.edit(data, exclude_unset=True, id=user_id)
         await self.db.save()
         return user
@@ -32,7 +32,7 @@ class UserService(BaseService):
             username=data.username,
             last_name=data.last_name,
             status=data.status,
-            department=data.department,
+            department_id=data.department_id,
             hashed_password=hashed_password,
         )
 

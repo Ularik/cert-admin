@@ -26,6 +26,10 @@ class UsersRepository(BaseRepository):
             .values(**data.model_dump())
         )
 
+    async def update_user(self, data: UserUpdateSchema, user_id: int) -> UserOutSchema:
+        res: UserOutSchema = await self.edit(data, id=user_id)
+        return res
+
     async def update_status(self, users_ids: list[int], status: Literal["ADMIN", "HEAD", "USER"]):
         query = (
             update(self.model)
@@ -35,23 +39,7 @@ class UsersRepository(BaseRepository):
         )
         await self.session.execute(query)
 
-    async def update_department(self, users_ids: list[int], new_department_id: int):
-        query = (
-            update(self.model)
-             .values(department=new_department_id)
-             .filter(self.model.id.in_(users_ids))
-            )
-        await self.session.execute(query)
-
-    async def update_users_bulk(self, data: UserUpdateSchema, users_ids: list[int]):
-        filters = self.model.id.in_(users_ids)
-        return await self.edit_bulk(data, filters)
-
     async def get_user_full_data(self, department_id: int = None) -> list[UserWithDepartmentOut]:
-        # Используем aliased, чтобы чётко разграничить JOIN-ы
-        DeptMember = aliased(Departments, name="dept_member")
-        DeptHead = aliased(Departments, name="dept_head")
-        DeptDeputy = aliased(Departments, name="dept_deputy")
 
         query = (
             select(
@@ -59,14 +47,10 @@ class UsersRepository(BaseRepository):
                 self.model.username,
                 self.model.last_name,
                 self.model.status,
-                DeptMember.id.label("department_id"),
-                DeptMember.title.label("member_department"),
-                DeptHead.title.label("head_of_department"),
-                DeptDeputy.title.label("deputy_head_of_department"),
+                self.model.department_id,
+                Departments.title.label("department_title"),
             )
-            .outerjoin(DeptMember, self.model.department == DeptMember.id)
-            .outerjoin(DeptHead, self.model.id == DeptHead.head_id)
-            .outerjoin(DeptDeputy, self.model.id == DeptDeputy.deputy_head_id)
+            .outerjoin(Departments, self.model.department_id == Departments.id)
         )
 
         if department_id:

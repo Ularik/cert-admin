@@ -59,7 +59,7 @@ class BaseRepository:
                 raise err
         return self.schema.model_validate(result.scalar_one())
 
-    async def edit(self, data: BaseModel, exclude_unset: bool = True, **filters) -> BaseModel:
+    async def edit(self, data: BaseModel, exclude_unset: bool = True, **filters):
 
         query = (
             update(self.model)
