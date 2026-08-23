@@ -56,29 +56,3 @@ async def patch_task(
     await TasksService(db).update_executors_task(executor_ids, task_id=id)
     # уведомить исполнителей
 
-
-@router.post("/{id}/tasks_reply")
-async def response_on_task(
-        db: DBDep,
-        user: AuthUserDep,
-        id: int,
-        content: str = Form(...),
-        attachments: list[UploadFile] = Form([]),
-):
-    # исполнить задачу (создать taskReply, taskReplyDocument) стать исполнителем задачи, дать комментарий
-    return await ReplyService(db).create_reply(
-        executor=user,
-        task_id=id,
-        content=content,
-        attachments=attachments
-    )
-
-@router.delete("/{id}")
-async def delete_own_task(
-        db: DBDep,
-        id: int,
-        user: AuthUserDep,
-):
-    # удалить только свою задач
-    await TasksService(db).delete_task(task_id=id, user_id=user.user_id)
-    return 200, {'status': 'delete success'}
