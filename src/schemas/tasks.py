@@ -36,13 +36,13 @@ class TaskLiteOutSchema(TaskCreateUpdateSchema):
 
 class TaskOutSchema(TaskCreateUpdateSchema):
     id: int
-    executors: list[UserOutSchema]
+    executors: list[int]
     attachments: list[DocumentLiteSchema]
     created_at: datetime
     updated_at: datetime
 
 
-class TaskAuthorOutSchema(TaskCreateUpdateSchema):
+class TaskFullOutSchema(TaskCreateUpdateSchema):
     id: int
     author: UserOutSchema
     departments: list[DepartmentLiteOutSchema]
@@ -53,5 +53,5 @@ class TaskAuthorOutSchema(TaskCreateUpdateSchema):
 
 class TaskApiResponseSchema(BaseModel):
     total: int
-    items: list[TaskAuthorOutSchema]
+    items: list[TaskFullOutSchema]
 

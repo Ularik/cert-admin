@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Form, UploadFile, Body
 
-from src.services.reply_service import ReplyService
 from src.services.tasks_service import TasksService
 from src.routers.dependencies import DBDep, AuthUserDep, QueryParamsDep
 
@@ -56,3 +55,13 @@ async def patch_task(
     await TasksService(db).update_executors_task(executor_ids, task_id=id)
     # уведомить исполнителей
 
+
+@router.delete("/{id}")
+async def delete_task(
+        db: DBDep,
+        id: int,
+        user: AuthUserDep
+):
+    # удалить только свою задач
+    await TasksService(db).delete_task_by_head(task_id=id, user_id=user.user_id)
+    return 200, {'status': 'delete success'}

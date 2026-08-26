@@ -43,8 +43,13 @@ class UserService(BaseService):
         except UniqueObjIsExistException as err:
             raise HTTPException(status_code=409, detail=err.detail)
 
-    async def get_me(self, id: int) -> UserOutSchema:
+    async def get_user(self, id: int) -> UserOutSchema:
         return await self.db.users.get_one(id=id)
 
     async def get_users(self, department_id: int = None):
         return await self.db.users.get_user_full_data(department_id=department_id)
+
+    async def update_user(self, data: UserUpdateSchema, user_id: int) -> UserOutSchema:
+        new_user = await self.db.users.update_user(data=data, user_id=user_id)
+        await self.db.save()
+        return new_user

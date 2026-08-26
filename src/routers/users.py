@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Response, Body
-from src.schemas.users import UsersAuthSchema, UserLoginSchema
+from src.schemas.users import UsersAuthSchema, UserLoginSchema, UserUpdateSchema
 from src.services.user_service import UserService
 from src.routers.dependencies import DBDep, AuthUserDep
 from src.models.users import UserStatus
@@ -31,17 +31,22 @@ async def get_users_statuses_list():
 
 @router.get("/me")
 async def get_me(db: DBDep, user: AuthUserDep):
-    user = await UserService(db).get_me(id=user.user_id)
+    user = await UserService(db).get_user(id=user.user_id)
+    return user
+
+@router.get("/{id}")
+async def get_me(db: DBDep, id: int):
+    user = await UserService(db).get_user(id=id)
     return user
 
 
-@router.patch("/")
-async def set_department_user(
+@router.patch("/{id}")
+async def update_user(
         db: DBDep,
-        user: AuthUserDep,
-        department_id: int = Body(..., embed=True)
+        id: int,
+        data: UserUpdateSchema
 ):
-    res = await UserService(db).set_department(user.user_id, department_id=department_id)
+    res = await UserService(db).update_user(data=data, user_id=id)
     return res
 
 @router.post("/logout")

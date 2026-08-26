@@ -31,6 +31,7 @@ class TasksDocumentRepository(BaseRepository):
 
         existing_filenames: set[str] = await self.get_existing_filenames(**kwargs)
 
+        # отфильтровываем от существующих файлов
         docs_to_insert = []
         for file in documents_files:
             if file.filename in existing_filenames:

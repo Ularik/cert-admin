@@ -3,10 +3,8 @@ class NoResultException(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-
 class ObjectNotFoundException(NoResultException):
     detail = "Объект не найден"
-
 
 class DepartmentNotFoundException(ObjectNotFoundException):
     detail = "Отдел не найден"
@@ -38,6 +36,9 @@ class HasNotRightsException(Exception):
 
 class DependsDepartmentException(HasNotRightsException):
     detail = 'Сначал нужно определить свой отдел'
+
+class HasNoRightsToUpdateDepartment(HasNotRightsException):
+    detail = "У вас недостаточно прав для изменения задачи"
 
 class HasNotRightsToTaskException(HasNotRightsException):
     detail = 'У вас недостаточно прав для этой задачи'

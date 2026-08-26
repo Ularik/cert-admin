@@ -1,6 +1,8 @@
+from src.models.departments_tasks import DepartmentsTasks
+from src.models.departments import Departments
 from src.models.tasks import Tasks
 from src.repositories.base import BaseRepository
-from src.schemas.tasks import TaskLiteOutSchema, TaskAuthorOutSchema, TaskApiResponseSchema
+from src.schemas.tasks import TaskLiteOutSchema, TaskFullOutSchema, TaskApiResponseSchema
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload, joinedload
 
@@ -30,7 +32,16 @@ class TasksRepository(BaseRepository):
             .offset(offset)
         )
         result = await self.session.execute(data_query)
-        items = [TaskAuthorOutSchema.model_validate(row) for row in result.scalars()]
+        items = [TaskFullOutSchema.model_validate(row) for row in result.scalars()]
 
         return TaskApiResponseSchema(total=total_count, items=items)
+
+    async def get_task_department_ids(self, task_id: int) -> list[int]:
+        query = select(DepartmentsTasks.department_id).where(
+            DepartmentsTasks.task_id == task_id
+        )
+        res = await self.session.execute(query)
+        return list(res.scalars().all())
+
+
 

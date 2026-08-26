@@ -36,7 +36,7 @@ async def put_task(
         departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([]),
-        old_attachments_datas: list[int] = Form([])
+        old_attachments_ids: list[int] = Form([])
 ):
     task = await TasksService(db).update_task(
         user_id=user.user_id,
@@ -45,7 +45,7 @@ async def put_task(
         description=description,
         departments_ids=departments_ids,
         attachments=attachments,
-        old_attachments_id_from_front=old_attachments_datas,
+        old_attachments_id_from_front=old_attachments_ids,
         executor_ids=executor_ids
     )
     return task
@@ -60,3 +60,11 @@ async def patch_task(
     await TasksService(db).update_executors_task(executor_ids, task_id=id)
     # уведомить исполнителей
 
+@router.delete("/{id}")
+async def delete_task(
+        db: DBDep,
+        id: int,
+):
+    # удалить только свою задач
+    await TasksService(db).delete_task_by_admin(task_id=id)
+    return 200, {'status': 'delete success'}
