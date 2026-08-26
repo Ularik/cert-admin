@@ -18,6 +18,7 @@ class DepartmentsTasksRepository(BaseRepository):
             self.schema(department_id=dep_id, task_id=task_id)
             for dep_id in departments_ids
         ]
+        print(tasks_departments_data_list)
         query = (
             pg_insert(self.model)
             .values([item.model_dump() for item in tasks_departments_data_list])

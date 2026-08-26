@@ -54,7 +54,7 @@ class UsersRepository(BaseRepository):
         )
 
         if department_id:
-            query = query.where(self.model.department == department_id)
+            query = query.where(self.model.department_id == department_id)
 
         result = await self.session.execute(query)
         return [UserWithDepartmentOut.model_validate(u) for u in result.mappings().all()]

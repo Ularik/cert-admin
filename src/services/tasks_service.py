@@ -14,42 +14,6 @@ from src.models.users import Users
 
 class TasksService(BaseService):
 
-    async def create_admin_task(
-            self,
-            user: UserInCookiesSchema,
-            title: str,
-            description: str | None,
-            attachments: list[UploadFile] | None,
-            departments_ids: list[int] = [],
-            executor_ids: list[int] = []
-    ):
-        if user.status != "ADMIN":
-            raise HasNoRightsToUpdateDepartment
-
-        task_data = TaskCreateUpdateSchema(author_id=user.user_id, title=title, description=description)
-        try:
-            new_task: TaskLiteOutSchema = await self.db.tasks.add_obj(task_data)
-        except UniqueObjIsExistException:
-            raise TaskAlreadyExistException
-
-        documents = await self.db.tasks_documents.add_documents(documents_files=set(attachments or []), task_id=new_task.id, )
-
-        try:
-            await self.db.tasks_users.connect_user_task(task_id=new_task.id, executor_ids=executor_ids)
-        except ObjectNotFoundException:
-            raise UserNotFoundException
-
-        try:
-            await self.db.task_departments.connect_departments_to_task(task_id=new_task.id, departments_ids=departments_ids)
-        except ObjectNotFoundException:
-            raise DepartmentNotFoundException
-
-        await self.db.save()
-
-        new_task_full_out = TaskOutSchema(**new_task.model_dump(), attachments=documents, executors=executor_ids)
-        return new_task_full_out
-
-
     async def create_task(
             self,
             user_id: int,
@@ -110,6 +74,7 @@ class TasksService(BaseService):
                 raise HasNotRightsToTaskException
 
             old_departments_ids = await self.db.tasks.get_task_department_ids(task_id=task_id)
+            departments_ids = [user.department_id]
             if old_departments_ids != [user.department_id]:
                 raise HasNotRightsToTaskException
 
