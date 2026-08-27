@@ -1,15 +1,12 @@
 from src.exceptions.exceptions import ObjectNotFoundException, DepartmentNotFoundException, UniqueObjIsExistException, \
     TaskAlreadyExistException, HasNotRightsToTaskException, UserNotFoundException, DependsDepartmentException, \
-    TaskNotFoundException, HasNoRightsToUpdateDepartment
+    TaskNotFoundException
 from src.routers.dependencies import QueryParamsSchema
-from src.schemas.departments_tasks import DepartmentsConnectTaskSchema
-from src.schemas.users import UserOutSchema, UserInCookiesSchema
-from src.schemas.users_tasks import UsersConnectTaskSchema
+from src.schemas.users import UserOutSchema
 from src.services.base import BaseService
 from src.schemas.tasks import (TaskCreateUpdateSchema, TaskOutSchema,
                                TaskLiteOutSchema, TaskApiResponseSchema, TaskFullOutSchema)
 from fastapi import UploadFile
-from src.models.users import Users
 
 
 class TasksService(BaseService):

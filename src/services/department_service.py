@@ -29,7 +29,7 @@ class DepartmentService(BaseService):
         new_dep_data = DepartmentCreateUpdateSchema(title=data.title, description=data.description)
         try:
             old_department: DepartmentsWithHeadsOutSchema = await self.get_one_department(department_id=dep_id)
-            new_department: DepartmentsOutSchema = await self.db.departments.edit(new_dep_data, id=dep_id, exclude_unset=True)
+            await self.db.departments.edit(new_dep_data, id=dep_id, exclude_unset=True)
         except UniqueObjIsExistException as err:
             raise DepartmentAlreadyExistException from err
         except ObjectNotFoundException as err:
@@ -48,15 +48,15 @@ class DepartmentService(BaseService):
         if old_heads_for_set_status_to_user:
             await self.db.users.update_status(users_ids=old_heads_for_set_status_to_user, status="USER")
 
-        if data.head_id and data.head_id not in old_heads:
-            update_users_data = UserUpdateSchema(department_id=new_department.id, status="HEAD")
+        if data.head_id and data.head_id != old_department.head.id:
+            update_users_data = UserUpdateSchema(department_id=old_department.id, status="HEAD")
             await self.db.users.update_user(data=update_users_data, user_id=data.head_id)
         if data.deputy_head_id and data.deputy_head_id not in old_heads:
-            update_users_data = UserUpdateSchema(department_id=new_department.id, status="DEPUTY")
+            update_users_data = UserUpdateSchema(department_id=old_department.id, status="DEPUTY")
             await self.db.users.update_user(data=update_users_data, user_id=data.deputy_head_id)
 
         await self.db.save()
-        return new_department
+        return old_department
 
     async def get_department(self) -> list[DepartmentsWithHeadsOutSchema]:
         return await self.db.departments.get_departments()
