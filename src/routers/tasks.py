@@ -10,21 +10,6 @@ from src.services.documents_service import DocumentService
 router = APIRouter(prefix="/tasks", tags=["Ручки задач сортрудников"])
 
 
-@router.post("/{id}/tasks_reply")
-async def response_on_task(
-        db: DBDep,
-        user: AuthUserDep,
-        id: int,
-        content: str = Form(...),
-        attachments: list[UploadFile] = Form([]),
-):
-    return await ReplyService(db).create_reply(
-        executor=user,
-        task_id=id,
-        content=content,
-        attachments=attachments
-    )
-
 @router.get("/task-documents/{doc_id}/download")
 async def download_task_document(doc_id: int, db: DBDep):
     doc = await DocumentService(db).download_task_document(document_id=doc_id)

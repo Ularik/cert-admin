@@ -7,6 +7,8 @@ from src.services.base import BaseService
 from src.schemas.tasks import (TaskCreateUpdateSchema, TaskOutSchema,
                                TaskLiteOutSchema, TaskApiResponseSchema, TaskFullOutSchema)
 from fastapi import UploadFile
+from src.models.tasks import Tasks
+from src.models.departments import Departments
 
 
 class TasksService(BaseService):
@@ -35,7 +37,8 @@ class TasksService(BaseService):
         except UniqueObjIsExistException:
             raise TaskAlreadyExistException
 
-        documents = await self.db.tasks_documents.add_documents(task_id=new_task.id, documents_files=set(attachments or []))
+        documents = await self.db.tasks_documents.add_documents(task_id=new_task.id,
+                                                                documents_files=set(attachments or []))
 
         try:
             await self.db.tasks_users.connect_user_task(task_id=new_task.id, executor_ids=executor_ids)
@@ -43,7 +46,8 @@ class TasksService(BaseService):
             raise UserNotFoundException
 
         try:
-            await self.db.task_departments.connect_departments_to_task(task_id=new_task.id, departments_ids=departments_ids)
+            await self.db.task_departments.connect_departments_to_task(task_id=new_task.id,
+                                                                       departments_ids=departments_ids)
         except ObjectNotFoundException:
             raise DepartmentNotFoundException
 
@@ -51,7 +55,6 @@ class TasksService(BaseService):
 
         new_task_full_out = TaskOutSchema(**new_task.model_dump(), attachments=documents, executors=executor_ids)
         return new_task_full_out
-
 
     async def update_task(
             self,
@@ -94,10 +97,15 @@ class TasksService(BaseService):
         await self.db.save()
         return new_task_full_out
 
-
     async def get_tasks(self, query_params: QueryParamsSchema) -> TaskApiResponseSchema:
-        resp: TaskApiResponseSchema = await self.db.tasks.get_filtered_tasks(limit=query_params.limit,
-                                                                                  offset=query_params.offset)
+        args = []
+        if query_params.department:
+            args.append(Tasks.departments.any(Departments.id == query_params.department))
+
+        resp: TaskApiResponseSchema = await self.db.tasks.get_filtered_tasks(*args,
+                                                                             limit=query_params.limit,
+                                                                             offset=query_params.offset,
+                                                                             )
         return resp
 
     async def get_one(self, task_id: int) -> TaskFullOutSchema:
@@ -117,7 +125,7 @@ class TasksService(BaseService):
         await self.db.save()
 
     async def delete_task_by_head(self, task_id: int, user_id: int):
-        user: UserOutSchema  = await self.db.users.get_one(id=user_id)
+        user: UserOutSchema = await self.db.users.get_one(id=user_id)
         departments_ids = await self.db.tasks.get_task_department_ids(task_id=task_id)
         if departments_ids != [user.department_id]:
             raise HasNotRightsToTaskException

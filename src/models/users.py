@@ -27,6 +27,7 @@ class Users(Base):
         comment="Отдел"
     )
     department: Mapped["Departments"] = relationship(back_populates="users")
+    replies: Mapped[list["TaskReply"]] = relationship(back_populates="author")
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.timezone('Asia/Bishkek', func.now()))
     updated_at: Mapped[datetime] = mapped_column(

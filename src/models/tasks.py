@@ -66,6 +66,8 @@ class TaskReply(Base):
     attachments: Mapped[List["ReplyDocument"]] = relationship(
         back_populates="reply", cascade="all, delete-orphan"
     )
+    author_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    author: Mapped["Users"] = relationship(back_populates="replies")
 
 
 class ReplyDocument(Base):
@@ -75,7 +77,6 @@ class ReplyDocument(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     filename: Mapped[str] = mapped_column(String(255))
     mime_type: Mapped[str] = mapped_column(String(100))
-
     # Тоже отложенная загрузка
     file_data: Mapped[bytes] = deferred(mapped_column(LargeBinary))
 

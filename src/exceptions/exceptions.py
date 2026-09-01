@@ -28,6 +28,9 @@ class DepartmentAlreadyExistException(UniqueObjIsExistException):
     detail = 'Такой отдел уже существует, поменяйте название title'
 
 
+class UserAlreadyExistException(UniqueObjIsExistException):
+    detail = "Пользователь с таким имененем уже существует"
+
 class HasNotRightsException(Exception):
     detail = 'У вас недостаточно прав'
     def __init__(self, *args, **kwargs):

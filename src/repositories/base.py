@@ -76,6 +76,8 @@ class BaseRepository:
         except IntegrityError as err:
             if isinstance(err.orig.__cause__, ForeignKeyViolationError):
                 raise ObjectNotFoundException from err
+            if isinstance(err.orig.__cause__, UniqueViolationError):
+                raise UniqueObjIsExistException from err
             raise
 
 

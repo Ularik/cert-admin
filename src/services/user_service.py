@@ -1,4 +1,4 @@
-from src.exceptions.exceptions import UniqueObjIsExistException
+from src.exceptions.exceptions import UniqueObjIsExistException, UserAlreadyExistException
 from src.schemas.users import UserLoginSchema, UserInCookiesSchema, UsersAuthSchema, UserOutSchema, UserAddSchema, \
     UserUpdateSchema
 from src.services.base import BaseService
@@ -50,6 +50,14 @@ class UserService(BaseService):
         return await self.db.users.get_user_full_data(department_id=department_id)
 
     async def update_user(self, data: UserUpdateSchema, user_id: int) -> UserOutSchema:
-        new_user = await self.db.users.update_user(data=data, user_id=user_id)
+        try:
+            new_user = await self.db.users.update_user(data=data, user_id=user_id)
+        except UniqueObjIsExistException as err:
+            raise UserAlreadyExistException from err
+
         await self.db.save()
         return new_user
+
+    async def delete_user(self, user_id: int) -> None:
+        await self.db.users.delete_bulk(id=user_id)
+        await self.db.save()

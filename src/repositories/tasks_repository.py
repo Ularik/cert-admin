@@ -11,7 +11,11 @@ class TasksRepository(BaseRepository):
     model = Tasks
     schema = TaskLiteOutSchema
 
-    async def get_filtered_tasks(self, limit: int = 10, offset: int = 0, *args, **kwargs) -> TaskApiResponseSchema:
+    async def get_filtered_tasks(self,
+                                 *args,
+                                 limit: int = 10,
+                                 offset: int = 0,
+                                 **kwargs) -> TaskApiResponseSchema:
         base_query = select(self.model).filter(*args).filter_by(**kwargs)
 
         # 1. Подсчет количества через subquery
@@ -31,6 +35,7 @@ class TasksRepository(BaseRepository):
             .limit(limit)
             .offset(offset)
         )
+
         result = await self.session.execute(data_query)
         items = [TaskFullOutSchema.model_validate(row) for row in result.scalars()]
 
