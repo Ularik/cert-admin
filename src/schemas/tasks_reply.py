@@ -13,7 +13,6 @@ class ReplyLiteOutSchema(ReplyCreateSchema):
     id: int
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
-
 class ReplyUpdateSchema(BaseModel):
     content: str | None = None
 

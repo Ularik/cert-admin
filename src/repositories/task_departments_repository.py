@@ -2,6 +2,7 @@ from asyncpg import ForeignKeyViolationError
 from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
 
+from src.models.users import Users
 from src.exceptions.exceptions import ObjectNotFoundException
 from src.models.departments_tasks import DepartmentsTasks
 from src.schemas.departments_tasks import DepartmentsConnectTaskSchema
@@ -18,7 +19,6 @@ class DepartmentsTasksRepository(BaseRepository):
             self.schema(department_id=dep_id, task_id=task_id)
             for dep_id in departments_ids
         ]
-        print(tasks_departments_data_list)
         query = (
             pg_insert(self.model)
             .values([item.model_dump() for item in tasks_departments_data_list])
@@ -37,6 +37,17 @@ class DepartmentsTasksRepository(BaseRepository):
             self.model.department_id.not_in(departments_ids)
         )
         await self.delete_bulk(filter_for_delete)
+
+
+    async def same_department(self, user_id: int, task_id: int) -> bool:
+        subq = (
+            select(self.model.id)
+            .join(Users, Users.department_id == self.model.department_id)
+            .where(Users.id == user_id, self.model.task_id == task_id)
+        )
+        result = await self.session.execute(select(subq.exists()))
+        return bool(result.scalar())
+
 
     async def get_tasks_departments_ids(self, task_id: int) -> list[int]:
         query = (

@@ -1,3 +1,6 @@
+from typing import Literal
+
+from src.schemas.users import UserInCookiesSchema
 from src.exceptions.exceptions import ObjectNotFoundException, DepartmentNotFoundException, UniqueObjIsExistException, \
     TaskAlreadyExistException, HasNotRightsToTaskException, UserNotFoundException, DependsDepartmentException, \
     TaskNotFoundException
@@ -5,7 +8,7 @@ from src.routers.dependencies import QueryParamsSchema
 from src.schemas.users import UserOutSchema
 from src.services.base import BaseService
 from src.schemas.tasks import (TaskCreateUpdateSchema, TaskOutSchema,
-                               TaskLiteOutSchema, TaskApiResponseSchema, TaskFullOutSchema)
+                               TaskLiteOutSchema, TaskApiResponseSchema, TaskFullOutSchema, TaskPatchStatusSchema)
 from fastapi import UploadFile
 from src.models.tasks import Tasks
 from src.models.departments import Departments
@@ -97,16 +100,23 @@ class TasksService(BaseService):
         await self.db.save()
         return new_task_full_out
 
-    async def get_tasks(self, query_params: QueryParamsSchema) -> TaskApiResponseSchema:
-        args = []
-        if query_params.department:
-            args.append(Tasks.departments.any(Departments.id == query_params.department))
+    async def change_status(self, task_id: int, data: TaskPatchStatusSchema, user: UserInCookiesSchema) -> None:
+        if user.status != "ADMIN":
+            canEdit = await self.db.task_departments.same_department(user_id=user.user_id, task_id=task_id)
+            if not canEdit:
+                raise HasNotRightsToTaskException
 
-        resp: TaskApiResponseSchema = await self.db.tasks.get_filtered_tasks(*args,
-                                                                             limit=query_params.limit,
-                                                                             offset=query_params.offset,
-                                                                             )
-        return resp
+        await self.db.tasks.edit(data, id=task_id)
+        await self.db.save()
+
+    async def get_tasks(self, query_params: QueryParamsSchema) -> TaskApiResponseSchema:
+        return await self.db.tasks.get_filtered_tasks(
+            department_id=query_params.department,
+            from_date=query_params.from_date,
+            to_date=query_params.to_date,
+            limit=query_params.limit,
+            offset=query_params.offset,
+        )
 
     async def get_one(self, task_id: int) -> TaskFullOutSchema:
         task: TaskApiResponseSchema = await self.db.tasks.get_filtered_tasks(id=task_id)

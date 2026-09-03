@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Form, UploadFile, Body
 
+from src.schemas.tasks import TaskPatchStatusSchema
 from src.services.tasks_service import TasksService
 from src.routers.dependencies import DBDep, AuthUserDep, QueryParamsDep
 
@@ -49,11 +50,11 @@ async def put_task(
 @router.patch("/{id}")
 async def patch_task(
         db: DBDep,
+        user: AuthUserDep,
         id: int,
-        executor_ids: list[int] = Body(..., embed=True),
+        status: TaskPatchStatusSchema,
 ):
-    await TasksService(db).update_executors_task(executor_ids, task_id=id)
-    # уведомить исполнителей
+    await TasksService(db).change_status(data=status, task_id=id)
 
 
 @router.delete("/{id}")

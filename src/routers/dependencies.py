@@ -19,6 +19,8 @@ DBDep = Annotated[DbManager, Depends(get_db)]
 class QueryParamsSchema(BaseModel):
     department: int | None = None
     created_at: datetime | None = None
+    from_date: datetime | None = None
+    to_date: datetime | None = None
     limit: int = Field(10, gt=0, le=50)
     offset: int = Field(0, ge=0)
 

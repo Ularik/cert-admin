@@ -3,6 +3,13 @@ from typing import List, Optional
 from sqlalchemy import DateTime, ForeignKey, String, LargeBinary, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship, deferred
 from src.database import Base
+from enum import Enum
+
+
+class TasksStatus(Enum):
+    NEW = "NEW"
+    PROGRESS = "PROGRESS"
+    DONE = "DONE"
 
 
 class Tasks(Base):
@@ -13,6 +20,7 @@ class Tasks(Base):
     author: Mapped["Users"] = relationship()
     title: Mapped[str] = mapped_column(String(255), unique=True)
     description: Mapped[Optional[str]]
+    status: Mapped[TasksStatus] = mapped_column(default=TasksStatus.NEW, server_default=TasksStatus.NEW.value)
     departments: Mapped[list["Departments"]] = relationship(secondary="departments_tasks", back_populates="tasks")
     executors: Mapped[list["Users"]] = relationship(secondary="users_tasks", back_populates="tasks")
     created_at: Mapped[datetime] = mapped_column(

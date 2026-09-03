@@ -1,3 +1,4 @@
+from src.schemas.tasks import TaskPatchStatusSchema
 from src.exceptions.exceptions import ReplyNotFoundException
 from src.schemas.users import UserInCookiesSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
@@ -5,6 +6,7 @@ from src.schemas.tasks_reply import ReplyLiteOutSchema, ReplyUpdateSchema, Reply
 from src.services.base import BaseService
 from fastapi import UploadFile
 from src.schemas.tasks import DocumentLiteSchema
+
 
 class ReplyService(BaseService):
 
@@ -25,6 +27,11 @@ class ReplyService(BaseService):
             content: str,
             attachments: list[UploadFile]
     ):
+        # обновляем статус задачи на "в процессе"
+        task_update_status = TaskPatchStatusSchema(status="PROGRESS")
+        await self.db.tasks.edit(data=task_update_status, id=task_id)
+
+        #
         users_task: UsersConnectTaskSchema = await self.db.tasks_users.get_one_or_none(task_id=task_id, user_id=executor.user_id)
         if not users_task:
             await self.db.tasks_users.connect_user_task(task_id=task_id, executor_ids=[executor.user_id])

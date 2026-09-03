@@ -44,7 +44,7 @@ class DependsDepartmentException(HasNotRightsException):
     detail = 'Сначал нужно определить свой отдел'
 
 class HasNoRightsToUpdateDepartment(HasNotRightsException):
-    detail = "У вас недостаточно прав для изменения задачи"
+    detail = "У вас недостаточно прав для изменения отдела"
 
 class HasNotRightsToTaskException(HasNotRightsException):
     detail = 'У вас недостаточно прав для этой задачи'

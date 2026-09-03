@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from src.models.departments_tasks import DepartmentsTasks
 from src.models.departments import Departments
 from src.models.tasks import Tasks
@@ -13,9 +15,22 @@ class TasksRepository(BaseRepository):
 
     async def get_filtered_tasks(self,
                                  *args,
+                                 department_id: int | None = None,
+                                 from_date: date | None = None,
+                                 to_date: date | None = None,
                                  limit: int = 10,
                                  offset: int = 0,
                                  **kwargs) -> TaskApiResponseSchema:
+        args = [*args]
+        if department_id is not None:
+            args.append(self.model.departments.any(Departments.id == department_id))
+
+        if from_date is not None:
+            args.append(self.model.created_at >= from_date)
+
+        if to_date is not None:
+            args.append(self.model.created_at < to_date + timedelta(days=1))
+
         base_query = select(self.model).filter(*args).filter_by(**kwargs)
 
         # 1. Подсчет количества через subquery

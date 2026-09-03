@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 from fastapi import UploadFile
 from datetime import datetime
@@ -29,13 +31,19 @@ class TaskCreateUpdateSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 
+class TaskPatchStatusSchema(BaseModel):
+    status: Literal["NEW", "PROGRESS", "DONE"] = "PROGRESS"
+
+
 class TaskLiteOutSchema(TaskCreateUpdateSchema):
     id: int
+    status: str
     created_at: datetime
     updated_at: datetime
 
 class TaskOutSchema(TaskCreateUpdateSchema):
     id: int
+    status: str
     executors: list[int]
     attachments: list[DocumentLiteSchema]
     created_at: datetime
@@ -44,6 +52,7 @@ class TaskOutSchema(TaskCreateUpdateSchema):
 
 class TaskFullOutSchema(TaskCreateUpdateSchema):
     id: int
+    status: str
     author: UserOutSchema
     departments: list[DepartmentLiteOutSchema]
     executors: list[UserOutSchema]
