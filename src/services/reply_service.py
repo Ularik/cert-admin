@@ -1,9 +1,9 @@
+from src.exceptions.exceptions import ReplyNotFoundException
 from src.schemas.users import UserInCookiesSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
-from src.schemas.tasks_reply import ReplyLiteOutSchema
+from src.schemas.tasks_reply import ReplyLiteOutSchema, ReplyUpdateSchema, ReplyCreateSchema, ReplyFullOutSchema
 from src.services.base import BaseService
 from fastapi import UploadFile
-from src.schemas.tasks_reply import ReplyCreateSchema, ReplyFullOutSchema
 from src.schemas.tasks import DocumentLiteSchema
 
 class ReplyService(BaseService):
@@ -14,7 +14,9 @@ class ReplyService(BaseService):
 
     async def get_one_reply(self, reply_id: int) -> ReplyFullOutSchema:
         res = await self.db.reply_tasks.get_filtered_replies(id=reply_id)
-        return res
+        if not res:
+            raise ReplyNotFoundException
+        return res[0]
 
     async def create_reply(
             self,
@@ -37,6 +39,24 @@ class ReplyService(BaseService):
         reply_with_docs = ReplyFullOutSchema(**reply.model_dump(), attachments=documents)
         await self.db.save()
         return reply_with_docs
+
+    async def update_reply(
+            self,
+            reply_id: int,
+            attachments: list[UploadFile],
+            old_attachments_ids: list[int],
+            content: str | None = None
+    ) -> ReplyFullOutSchema:
+        docs: list[DocumentLiteSchema] = await self.db.reply_documents.update_documents(
+            reply_id=reply_id,
+            new_documents=attachments,
+            old_docs_id_from_front=old_attachments_ids,
+        )
+
+        data = ReplyUpdateSchema(content=content)
+        reply = await self.db.reply_tasks.edit(data=data, id=reply_id)
+        await self.db.save()
+        return ReplyFullOutSchema(**reply.model_dump(), attachments=docs)
 
     async def delete_reply(self, reply_id: int):
         await self.db.reply_tasks.delete(id=reply_id)

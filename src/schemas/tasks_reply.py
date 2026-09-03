@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict
+from fastapi import UploadFile
 from src.schemas.users import UserOutSchema
 from src.schemas.tasks import DocumentLiteSchema
 
@@ -12,6 +13,9 @@ class ReplyLiteOutSchema(ReplyCreateSchema):
     id: int
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
+
+class ReplyUpdateSchema(BaseModel):
+    content: str | None = None
 
 class ReplyFullOutSchema(ReplyCreateSchema):
     id: int

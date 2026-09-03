@@ -12,6 +12,9 @@ class DepartmentNotFoundException(ObjectNotFoundException):
 class TaskNotFoundException(ObjectNotFoundException):
     detail = "Задача не найден"
 
+class ReplyNotFoundException(ObjectNotFoundException):
+    detail = "Ответ не найден"
+
 class UserNotFoundException(NoResultException):
     detail = "Сотрудник не найден"
 
