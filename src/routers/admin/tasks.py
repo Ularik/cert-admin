@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, Form, Body
-
+from datetime import date
 from src.schemas.tasks import TaskPatchStatusSchema
 from src.services.tasks_service import TasksService
 from src.routers.dependencies import DBDep, AuthUserDep
@@ -13,6 +13,7 @@ async def post_task(
         user: AuthUserDep,
         title: str = Form(...),
         description: str | None = Form(None),
+        deadlines: date | None = Form(None),
         departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([])
@@ -22,6 +23,7 @@ async def post_task(
         title=title,
         description=description,
         departments_ids=departments_ids,
+        deadlines=deadlines,
         attachments=attachments,
         executor_ids=executor_ids
     )
@@ -34,6 +36,7 @@ async def put_task(
         user: AuthUserDep,
         title: str = Form(...),
         description: str | None = Form(None),
+        deadlines: date | None = Form(None),
         departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([]),
@@ -44,6 +47,7 @@ async def put_task(
         task_id=id,
         title=title,
         description=description,
+        deadlines=deadlines,
         departments_ids=departments_ids,
         attachments=attachments,
         old_attachments_id_from_front=old_attachments_ids,
@@ -56,9 +60,10 @@ async def put_task(
 async def patch_task(
         db: DBDep,
         id: int,
+        user: AuthUserDep,
         status: TaskPatchStatusSchema,
 ):
-    await TasksService(db).change_status(data=status, task_id=id)
+    await TasksService(db).change_status(data=status, task_id=id, user=user)
     # уведомить исполнителей
 
 @router.delete("/{id}")

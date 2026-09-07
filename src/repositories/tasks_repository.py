@@ -5,7 +5,7 @@ from src.models.departments import Departments
 from src.models.tasks import Tasks
 from src.repositories.base import BaseRepository
 from src.schemas.tasks import TaskLiteOutSchema, TaskFullOutSchema, TaskApiResponseSchema
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload, joinedload
 
 
@@ -18,6 +18,8 @@ class TasksRepository(BaseRepository):
                                  department_id: int | None = None,
                                  from_date: date | None = None,
                                  to_date: date | None = None,
+                                 rush: bool | None = None,
+                                 status: list[str] = [],
                                  limit: int = 10,
                                  offset: int = 0,
                                  **kwargs) -> TaskApiResponseSchema:
@@ -30,6 +32,26 @@ class TasksRepository(BaseRepository):
 
         if to_date is not None:
             args.append(self.model.created_at < to_date + timedelta(days=1))
+
+        if status:
+            args.append(self.model.status.in_(status))
+
+        if rush is not None:
+            today = date.today()
+            tomorrow = today + timedelta(days=1)
+
+            args.append(
+                or_(
+                    and_(
+                        self.model.deadlines > today,
+                        self.model.deadlines <= tomorrow
+                    ),
+            and_(
+                        self.model.deadlines <= today,
+                        self.model.status != "DONE"
+                    )
+                )
+            )
 
         base_query = select(self.model).filter(*args).filter_by(**kwargs)
 

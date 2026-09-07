@@ -1,10 +1,10 @@
 from typing import Literal
-
-from pydantic import BaseModel, ConfigDict
+from datetime import date
+from pydantic import BaseModel, ConfigDict, Field
 from fastapi import UploadFile
 from datetime import datetime
 
-from src.schemas.departments import DepartmentsOutSchema, DepartmentLiteOutSchema
+from src.schemas.departments import DepartmentLiteOutSchema
 from src.schemas.users import UserOutSchema
 
 
@@ -28,11 +28,12 @@ class TaskCreateUpdateSchema(BaseModel):
     author_id: int
     title: str
     description: str | None = None
+    deadlines: date | None = None
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 
 class TaskPatchStatusSchema(BaseModel):
-    status: Literal["NEW", "PROGRESS", "DONE"] = "PROGRESS"
+    status: Literal["NEW", "PROGRESS", "DONE"] = Field(default="PROGRESS")
 
 
 class TaskLiteOutSchema(TaskCreateUpdateSchema):

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional
 from sqlalchemy import DateTime, ForeignKey, String, LargeBinary, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship, deferred
@@ -20,6 +20,7 @@ class Tasks(Base):
     author: Mapped["Users"] = relationship()
     title: Mapped[str] = mapped_column(String(255), unique=True)
     description: Mapped[Optional[str]]
+    deadlines: Mapped[date | None]
     status: Mapped[TasksStatus] = mapped_column(default=TasksStatus.NEW, server_default=TasksStatus.NEW.value)
     departments: Mapped[list["Departments"]] = relationship(secondary="departments_tasks", back_populates="tasks")
     executors: Mapped[list["Users"]] = relationship(secondary="users_tasks", back_populates="tasks")

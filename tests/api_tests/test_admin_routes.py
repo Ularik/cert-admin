@@ -58,16 +58,22 @@ class TestCreateTask:
         response = await admin_ac.post("/admin/tasks/", data={"description": "no title here"})
         assert response.status_code == 422
 
-    async def test_create_task_with_nonexistent_executor_returns_error(self, admin_ac):
+    async def test_create_task_with_nonexistent_executor_returns_error(self, admin_ac, test_department):
         title = unique_title()
+        department = await test_department()
         response = await admin_ac.post(
             "/admin/tasks/",
-            data={"title": title, "executor_ids": [999_999_999]},
+            data={
+                "title": title,
+                "departments_ids": [department["id"]],
+                "executor_ids": [999_999_999],
+            },
         )
-        assert response.status_code == 400
+        assert response.status_code == 404
 
-    async def test_create_task_with_duplicate_attachment(self, admin_ac):
+    async def test_create_task_with_duplicate_attachment(self, admin_ac, test_department):
         title = unique_title()
+        department = await test_department()
         files = [
             ("attachments", make_real_docx_file("report.docx")),
             ("attachments", make_real_docx_file("report.docx")),
@@ -75,7 +81,7 @@ class TestCreateTask:
         ]
         response = await admin_ac.post(
             "/admin/tasks/",
-            data={"title": title},
+            data={"title": title, "departments_ids": [department["id"]]},
             files=files,
         )
         assert response.status_code == 200
@@ -83,13 +89,15 @@ class TestCreateTask:
         print(res['attachments'])
         assert len(res['attachments']) == 1
 
-    async def test_create_task_duplicate_title_returns_error(self, admin_ac):
+    async def test_create_task_duplicate_title_returns_error(self, admin_ac, test_department):
         """title у Tasks unique=True — повторное создание с тем же title должно падать."""
         title = "Повторный заголовок"
-        first = await admin_ac.post("/admin/tasks/", data={"title": title})
+        department = await test_department()
+        data = {"title": title, "departments_ids": [department["id"]]}
+        first = await admin_ac.post("/admin/tasks/", data=data)
         assert first.status_code == 200, first.text
 
-        second = await admin_ac.post("/admin/tasks/", data={"title": title})
+        second = await admin_ac.post("/admin/tasks/", data=data)
         assert second.status_code == 400
 
 
@@ -98,9 +106,13 @@ class TestCreateTask:
 # ---------------------------------------------------------------------------
 
 class TestGetTasks:
-    async def test_get_tasks_success(self, admin_ac):
-        await admin_ac.post("/admin/tasks/", data={"title": unique_title()})
-        response = await admin_ac.get("/admin/tasks/", params={"limit": 10, "offset": 0})
+    async def test_get_tasks_success(self, admin_ac, test_department):
+        department = await test_department()
+        await admin_ac.post(
+            "/admin/tasks/",
+            data={"title": unique_title(), "departments_ids": [department["id"]]},
+        )
+        response = await admin_ac.get("/tasks/", params={"limit": 10, "offset": 0})
         assert response.status_code == 200
 
 #     async def test_get_tasks_limit_out_of_range_returns_422(self, ac):
@@ -122,9 +134,13 @@ class TestGetTasks:
 # и синтаксис/логика там валидны без изменений.
 
 class TestUpdateTask:
-    async def test_update_task(self, admin_ac):
+    async def test_update_task(self, admin_ac, test_department):
+        department = await test_department()
         create_resp = await admin_ac.post("/admin/tasks/",
-                                          data={"title": unique_title()},
+                                          data={
+                                              "title": unique_title(),
+                                              "departments_ids": [department["id"]],
+                                          },
                                           files=[
                                               ("attachments", make_real_docx_file("test.docx")),
                                               ("attachments", make_real_docx_file("test2.docx")),
@@ -140,7 +156,8 @@ class TestUpdateTask:
             f"/admin/tasks/{task_id}",
             data={
                 "title": new_title,
-                "old_attachments_datas": [old_attachment['id']]
+                "departments_ids": [department["id"]],
+                "old_attachments_ids": [old_attachment['id']]
             },
             files=[
                 ("attachments", make_real_docx_file("new_test.docx")),
@@ -168,15 +185,17 @@ class TestUpdateTask:
 # ---------------------------------------------------------------------------
 
 class TestUpdateExecutors:
-    async def test_patch_task_executors_success(self, admin_ac, test_user):
-        create_resp = await admin_ac.post("/admin/tasks/", data={"title": unique_title()})
+    async def test_patch_task_status_success(self, admin_ac, test_department):
+        department = await test_department()
+        create_resp = await admin_ac.post(
+            "/admin/tasks/",
+            data={"title": unique_title(), "departments_ids": [department["id"]]},
+        )
         task_id = create_resp.json()["id"]
-
-        executor_1 = await test_user(title='test')
 
         response = await admin_ac.patch(
             f"/admin/tasks/{task_id}",
-            json={"executor_ids": [executor_1["id"]]},
+            json={"status": "DONE"},
         )
         assert response.status_code == 200
 
@@ -186,8 +205,12 @@ class TestUpdateExecutors:
 # ---------------------------------------------------------------------------
 
 class TestCreateReply:
-    async def test_create_reply_success(self, admin_ac):
-        create_resp = await admin_ac.post("/admin/tasks/", data={"title": unique_title()})
+    async def test_create_reply_success(self, admin_ac, test_department):
+        department = await test_department()
+        create_resp = await admin_ac.post(
+            "/admin/tasks/",
+            data={"title": unique_title(), "departments_ids": [department["id"]]},
+        )
 
         assert create_resp.status_code == 200
         task_id = create_resp.json()["id"]
@@ -197,7 +220,7 @@ class TestCreateReply:
         ]
 
         response = await admin_ac.post(
-            f"/admin/tasks/{task_id}/tasks_reply",
+            f"/tasks/{task_id}/tasks_reply",
             data={"content": "done"},
             files=files
         )

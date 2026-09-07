@@ -10,8 +10,7 @@ from src.services.base import BaseService
 from src.schemas.tasks import (TaskCreateUpdateSchema, TaskOutSchema,
                                TaskLiteOutSchema, TaskApiResponseSchema, TaskFullOutSchema, TaskPatchStatusSchema)
 from fastapi import UploadFile
-from src.models.tasks import Tasks
-from src.models.departments import Departments
+from datetime import date
 
 
 class TasksService(BaseService):
@@ -21,6 +20,7 @@ class TasksService(BaseService):
             user_id: int,
             title: str,
             description: str | None,
+            deadlines: date | None,
             attachments: list[UploadFile] | None,
             departments_ids: list[int] = [],
             executor_ids: list[int] = []
@@ -34,7 +34,7 @@ class TasksService(BaseService):
         if user.status != "ADMIN":
             departments_ids = [user.department_id]
 
-        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description)
+        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, deadlines=deadlines)
         try:
             new_task: TaskLiteOutSchema = await self.db.tasks.add_obj(task_data)
         except UniqueObjIsExistException:
@@ -65,6 +65,7 @@ class TasksService(BaseService):
             task_id: int,
             title: str,
             description: str | None,
+            deadlines: date | None,
             attachments: list[UploadFile] | None,
             old_attachments_id_from_front: list[int],
             departments_ids: list[int] = [],
@@ -81,7 +82,7 @@ class TasksService(BaseService):
             if old_departments_ids != [user.department_id]:
                 raise HasNotRightsToTaskException
 
-        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description)
+        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, deadlines=deadlines)
         try:
             task = await self.db.tasks.edit(task_data, exclude_unset=True, id=task_id)
         except ObjectNotFoundException:
@@ -111,9 +112,11 @@ class TasksService(BaseService):
 
     async def get_tasks(self, query_params: QueryParamsSchema) -> TaskApiResponseSchema:
         return await self.db.tasks.get_filtered_tasks(
-            department_id=query_params.department,
+            department_id=query_params.department_id,
             from_date=query_params.from_date,
             to_date=query_params.to_date,
+            rush=query_params.rush,
+            status=query_params.status,
             limit=query_params.limit,
             offset=query_params.offset,
         )

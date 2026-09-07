@@ -1,11 +1,11 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from src.database import AsyncSessionMaker
 from src.schemas.users import UserInCookiesSchema
 from src.db_manager.db_manager import DbManager
-from fastapi import Depends, Request, HTTPException, status
+from fastapi import Depends, Request, HTTPException, status, Query
 from src.services.auth import AuthService
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, date
 
 
 async def get_db():
@@ -15,17 +15,41 @@ async def get_db():
 
 DBDep = Annotated[DbManager, Depends(get_db)]
 
+StatusType = Literal["NEW", "PROGRESS", "DONE"]
 
 class QueryParamsSchema(BaseModel):
-    department: int | None = None
+    department_id: int | None = None
     created_at: datetime | None = None
-    from_date: datetime | None = None
-    to_date: datetime | None = None
+    from_date: date | None = None
+    to_date: date | None = None
+    status: list[StatusType] = []
+    rush: bool | None = None
     limit: int = Field(10, gt=0, le=50)
     offset: int = Field(0, ge=0)
 
+def get_query_params(
+        department_id: int | None = None,
+        created_at: datetime | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+        status: list[StatusType] = Query(default=[]),  # <--- Важно: Query()
+        rush: bool | None = None,
+        limit: int = Query(10, gt=0, le=50),
+        offset: int = Query(0, ge=0),
+) -> QueryParamsSchema:
+    return QueryParamsSchema(
+        department_id=department_id,
+        created_at=created_at,
+        from_date=from_date,
+        to_date=to_date,
+        status=status,
+        rush=rush,
+        limit=limit,
+        offset=offset,
+    )
 
-QueryParamsDep = Annotated[QueryParamsSchema, Depends(QueryParamsSchema)]
+
+QueryParamsDep = Annotated[QueryParamsSchema, Depends(get_query_params)]
 
 def get_token(request: Request) -> str:
     token = request.cookies.get("access_token", None)
