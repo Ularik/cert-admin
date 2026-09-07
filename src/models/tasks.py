@@ -21,6 +21,7 @@ class Tasks(Base):
     title: Mapped[str] = mapped_column(String(255), unique=True)
     description: Mapped[Optional[str]]
     deadlines: Mapped[date | None]
+    is_expired: Mapped[bool | None]
     status: Mapped[TasksStatus] = mapped_column(default=TasksStatus.NEW, server_default=TasksStatus.NEW.value)
     departments: Mapped[list["Departments"]] = relationship(secondary="departments_tasks", back_populates="tasks")
     executors: Mapped[list["Users"]] = relationship(secondary="users_tasks", back_populates="tasks")

@@ -7,3 +7,5 @@ pytest
 pytest-dotenv
 pytest-asyncio
 python-docx
+celery
+redis

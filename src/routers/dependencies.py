@@ -1,4 +1,7 @@
 from typing import Annotated, Literal
+
+from pygments.lexer import default
+
 from src.database import AsyncSessionMaker
 from src.schemas.users import UserInCookiesSchema
 from src.db_manager.db_manager import DbManager
@@ -22,8 +25,9 @@ class QueryParamsSchema(BaseModel):
     created_at: datetime | None = None
     from_date: date | None = None
     to_date: date | None = None
-    status: list[StatusType] = []
+    status: list[StatusType] = Field(default_factory=[])
     rush: bool | None = None
+    is_expired: bool | None = None
     limit: int = Field(10, gt=0, le=50)
     offset: int = Field(0, ge=0)
 
@@ -34,6 +38,7 @@ def get_query_params(
         to_date: date | None = None,
         status: list[StatusType] = Query(default=[]),  # <--- Важно: Query()
         rush: bool | None = None,
+        is_expired: bool | None = None,
         limit: int = Query(10, gt=0, le=50),
         offset: int = Query(0, ge=0),
 ) -> QueryParamsSchema:
@@ -44,6 +49,7 @@ def get_query_params(
         to_date=to_date,
         status=status,
         rush=rush,
+        is_expired=is_expired,
         limit=limit,
         offset=offset,
     )

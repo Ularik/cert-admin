@@ -116,6 +116,7 @@ class TasksService(BaseService):
             from_date=query_params.from_date,
             to_date=query_params.to_date,
             rush=query_params.rush,
+            is_expired=query_params.is_expired,
             status=query_params.status,
             limit=query_params.limit,
             offset=query_params.offset,

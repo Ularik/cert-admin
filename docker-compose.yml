@@ -8,6 +8,21 @@ services:
     env_file:
       - .env
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes # 5. Включение постоянного сохранения на диск
+    healthcheck: # 6. Проверка здоровья контейнера
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     container_name: backend
     build: .
@@ -20,6 +35,28 @@ services:
 
     env_file:
       - .env
+
+  celery_worker:
+    build:
+      context: .
+    env_file:
+      - .env
+    command: celery -A celery_app.celery_app:celery_instance worker --loglevel=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - reports_data:/app/src/media/reports
+
+  celery_beat:
+    build:
+      context: .
+    env_file:
+      - .env
+    command: celery -A celery_app.celery_app:celery_instance beat --loglevel=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
 
   frontend:
     image: ularchik/cert_admin_front
@@ -47,3 +84,4 @@ services:
 
 volumes:
   postgres_data_admin:
+  redis_data:

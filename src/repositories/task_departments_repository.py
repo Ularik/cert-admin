@@ -15,6 +15,9 @@ class DepartmentsTasksRepository(BaseRepository):
     schema = DepartmentsConnectTaskSchema
 
     async def connect_departments_to_task(self, task_id: int, departments_ids: list[int]) -> None:
+        if not departments_ids:
+            return
+
         tasks_departments_data_list = [
             self.schema(department_id=dep_id, task_id=task_id)
             for dep_id in departments_ids

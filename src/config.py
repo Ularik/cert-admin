@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str
     POSTGRES_PORT: str
 
+    REDIS_HOST: str
+    REDIS_HOST_DOCKER: str
+    REDIS_PORT: str
+
+    @property
+    def REDIS_URL(self):
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
+
 
     @property
     def DB_URL(self):
