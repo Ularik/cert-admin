@@ -27,6 +27,7 @@ class QueryParamsSchema(BaseModel):
     to_date: date | None = None
     status: list[StatusType] = Field(default_factory=[])
     rush: bool | None = None
+    extra_rush: bool | None = None
     is_expired: bool | None = None
     limit: int = Field(10, gt=0, le=50)
     offset: int = Field(0, ge=0)
@@ -38,6 +39,7 @@ def get_query_params(
         to_date: date | None = None,
         status: list[StatusType] = Query(default=[]),  # <--- Важно: Query()
         rush: bool | None = None,
+        extra_rush: bool | None = None,
         is_expired: bool | None = None,
         limit: int = Query(10, gt=0, le=50),
         offset: int = Query(0, ge=0),
@@ -49,6 +51,7 @@ def get_query_params(
         to_date=to_date,
         status=status,
         rush=rush,
+        extra_rush=extra_rush,
         is_expired=is_expired,
         limit=limit,
         offset=offset,

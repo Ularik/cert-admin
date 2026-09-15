@@ -29,6 +29,7 @@ class TaskCreateUpdateSchema(BaseModel):
     title: str
     description: str | None = None
     deadlines: date | None = None
+    note: str | None
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 

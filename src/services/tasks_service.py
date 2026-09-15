@@ -21,6 +21,7 @@ class TasksService(BaseService):
             title: str,
             description: str | None,
             deadlines: date | None,
+            note: str | None,
             attachments: list[UploadFile] | None,
             departments_ids: list[int] = [],
             executor_ids: list[int] = []
@@ -34,7 +35,7 @@ class TasksService(BaseService):
         if user.status != "ADMIN":
             departments_ids = [user.department_id]
 
-        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, deadlines=deadlines)
+        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, deadlines=deadlines, note=note)
         try:
             new_task: TaskLiteOutSchema = await self.db.tasks.add_obj(task_data)
         except UniqueObjIsExistException:
@@ -66,6 +67,7 @@ class TasksService(BaseService):
             title: str,
             description: str | None,
             deadlines: date | None,
+            note: str | None,
             attachments: list[UploadFile] | None,
             old_attachments_id_from_front: list[int],
             departments_ids: list[int] = [],
@@ -82,7 +84,7 @@ class TasksService(BaseService):
             if old_departments_ids != [user.department_id]:
                 raise HasNotRightsToTaskException
 
-        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, deadlines=deadlines)
+        task_data = TaskCreateUpdateSchema(author_id=user_id, title=title, description=description, deadlines=deadlines, note=note)
         try:
             task = await self.db.tasks.edit(task_data, exclude_unset=True, id=task_id)
         except ObjectNotFoundException:
@@ -116,6 +118,7 @@ class TasksService(BaseService):
             from_date=query_params.from_date,
             to_date=query_params.to_date,
             rush=query_params.rush,
+            extra_rush=query_params.extra_rush,
             is_expired=query_params.is_expired,
             status=query_params.status,
             limit=query_params.limit,

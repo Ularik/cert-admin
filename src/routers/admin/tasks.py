@@ -14,6 +14,7 @@ async def post_task(
         title: str = Form(...),
         description: str | None = Form(None),
         deadlines: date | None = Form(None),
+        note: str | None = Form(None),
         departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([])
@@ -24,6 +25,7 @@ async def post_task(
         description=description,
         departments_ids=departments_ids,
         deadlines=deadlines,
+        note=note,
         attachments=attachments,
         executor_ids=executor_ids
     )
@@ -37,6 +39,7 @@ async def put_task(
         title: str = Form(...),
         description: str | None = Form(None),
         deadlines: date | None = Form(None),
+        note: str | None = Form(None),
         departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([]),
@@ -48,6 +51,7 @@ async def put_task(
         title=title,
         description=description,
         deadlines=deadlines,
+        note=note,
         departments_ids=departments_ids,
         attachments=attachments,
         old_attachments_id_from_front=old_attachments_ids,

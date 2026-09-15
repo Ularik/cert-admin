@@ -4,8 +4,6 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 EXPOSE 8000
 RUN apt update -y
-RUN apt-get install -y --no-install-recommends mc
-RUN apt-get install -y --no-install-recommends build-essential
 
 RUN mkdir -p /usr/www/logs
 RUN mkdir -p /usr/www/media

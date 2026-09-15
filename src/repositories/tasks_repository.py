@@ -20,6 +20,7 @@ class TasksRepository(BaseRepository):
                                  from_date: date | None = None,
                                  to_date: date | None = None,
                                  rush: bool | None = None,
+                                 extra_rush: bool | None = None,
                                  is_expired: bool | None = None,
                                  status: list[str] = [],
                                  limit: int = 10,
@@ -39,6 +40,23 @@ class TasksRepository(BaseRepository):
             args.append(self.model.status.in_(status))
 
         if rush is not None:
+            today = date.today()
+            three_days = today + timedelta(days=3)
+
+            args.append(
+                or_(
+                    and_(
+                        self.model.deadlines > today,
+                        self.model.deadlines <= three_days
+                    ),
+                    and_(
+                        self.model.deadlines <= today,
+                        self.model.status != "DONE"
+                    )
+                )
+            )
+
+        if extra_rush is not None:
             today = date.today()
             tomorrow = today + timedelta(days=1)
 

@@ -23,6 +23,7 @@ class Tasks(Base):
     deadlines: Mapped[date | None]
     is_expired: Mapped[bool | None]
     status: Mapped[TasksStatus] = mapped_column(default=TasksStatus.NEW, server_default=TasksStatus.NEW.value)
+    note: Mapped[str | None]
     departments: Mapped[list["Departments"]] = relationship(secondary="departments_tasks", back_populates="tasks")
     executors: Mapped[list["Users"]] = relationship(secondary="users_tasks", back_populates="tasks")
     created_at: Mapped[datetime] = mapped_column(

@@ -45,8 +45,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    volumes:
-      - reports_data:/app/src/media/reports
 
   celery_beat:
     build:
