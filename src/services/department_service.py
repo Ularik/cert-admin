@@ -1,3 +1,5 @@
+from fastapi import HTTPException
+
 from src.exceptions.exceptions import UniqueObjIsExistException, DepartmentAlreadyExistException, \
     ObjectNotFoundException, DepartmentNotFoundException
 from src.schemas.users import UserUpdateSchema
@@ -8,27 +10,65 @@ from src.schemas.departments import DepartmentCreateUpdateSchema, DepartmentsOut
 
 class DepartmentService(BaseService):
 
-    async def add_department(self, data: DepartmentRequestCreateUpdateSchema) -> DepartmentsOutSchema:
-        new_dep_data = DepartmentCreateUpdateSchema(title=data.title, description=data.description)
+    async def add_department(
+        self,
+        data: DepartmentRequestCreateUpdateSchema,
+        user_id: int,
+    ) -> DepartmentsOutSchema:
+        actor = await self.db.users.get_one(id=user_id)
+        if actor.status not in {"ADMIN", "DIVISION_HEAD", "MANAGEMENT_HEAD", "HEAD"}:
+            raise HTTPException(status_code=403, detail="Недостаточно прав для создания отдела")
+        if actor.status == "MANAGEMENT_HEAD" and actor.management_id != data.management_id:
+            raise HTTPException(status_code=403, detail="Можно создавать отделы только в своем управлении")
+        if not await self.db.managements.get_managements(id=data.management_id):
+            raise HTTPException(status_code=404, detail="Управление не найдено")
+
+        new_dep_data = DepartmentCreateUpdateSchema(
+            title=data.title,
+            description=data.description,
+            management_id=data.management_id,
+        )
         try:
             new_dep: DepartmentsOutSchema = await self.db.departments.add_obj(new_dep_data)
         except UniqueObjIsExistException as err:
             raise DepartmentAlreadyExistException from err
 
-        if data.head_id:
-            data = UserUpdateSchema(status="ADMIN", department_id=new_dep.id)
-            await self.db.users.update_user(user_id=data.head_id, data=data)
-        if data.deputy_head_id:
-            data = UserUpdateSchema(status="DEPUTY", department_id=new_dep.id)
-            await self.db.users.update_user(user_id=data.head_id, data=data)
+        if data.head_id is not None:
+            await self.db.users.update_user(
+                user_id=data.head_id,
+                data=UserUpdateSchema(status="HEAD", department_id=new_dep.id),
+            )
+        if data.deputy_head_id is not None:
+            await self.db.users.update_user(
+                user_id=data.deputy_head_id,
+                data=UserUpdateSchema(status="DEPUTY", department_id=new_dep.id),
+            )
 
         await self.db.save()
-        return new_dep
+        return await self.get_one_department(department_id=new_dep.id)
 
-    async def update_department(self, dep_id: int, data: DepartmentRequestCreateUpdateSchema) -> DepartmentsOutSchema:
-        new_dep_data = DepartmentCreateUpdateSchema(title=data.title, description=data.description)
+    async def update_department(
+        self,
+        dep_id: int,
+        data: DepartmentRequestCreateUpdateSchema,
+        user_id: int,
+    ) -> DepartmentsOutSchema:
+        actor = await self.db.users.get_one(id=user_id)
+        old_department = await self.get_one_department(department_id=dep_id)
+        if actor.status == "MANAGEMENT_HEAD" and (
+            actor.management_id != old_department.management_id
+            or actor.management_id != data.management_id
+        ):
+            raise HTTPException(status_code=403, detail="Можно изменять отделы только своего управления")
+        if not await self.db.managements.get_managements(id=data.management_id):
+            raise HTTPException(status_code=404, detail="Управление не найдено")
+
+        new_dep_data = DepartmentCreateUpdateSchema(
+            title=data.title,
+            description=data.description,
+            management_id=data.management_id,
+        )
         try:
-            old_department: DepartmentsWithHeadsOutSchema = await self.get_one_department(department_id=dep_id)
             await self.db.departments.edit(new_dep_data, id=dep_id, exclude_unset=True)
         except UniqueObjIsExistException as err:
             raise DepartmentAlreadyExistException from err
@@ -48,21 +88,71 @@ class DepartmentService(BaseService):
         if old_heads_for_set_status_to_user:
             await self.db.users.update_status(users_ids=old_heads_for_set_status_to_user, status="USER")
 
-        if data.head_id and data.head_id != old_department.head.id:
-            update_users_data = UserUpdateSchema(department_id=old_department.id, status="HEAD")
-            await self.db.users.update_user(data=update_users_data, user_id=data.head_id)
-        if data.deputy_head_id and data.deputy_head_id not in old_heads:
-            update_users_data = UserUpdateSchema(department_id=old_department.id, status="DEPUTY")
-            await self.db.users.update_user(data=update_users_data, user_id=data.deputy_head_id)
+        if data.head_id is not None:
+            await self.db.users.update_user(
+                data=UserUpdateSchema(department_id=old_department.id, status="HEAD"),
+                user_id=data.head_id,
+            )
+        if data.deputy_head_id is not None:
+            await self.db.users.update_user(
+                data=UserUpdateSchema(department_id=old_department.id, status="DEPUTY"),
+                user_id=data.deputy_head_id,
+            )
 
         await self.db.save()
-        return old_department
+        return await self.get_one_department(department_id=dep_id)
 
-    async def get_department(self) -> list[DepartmentsWithHeadsOutSchema]:
+    async def delete_department(self, dep_id: int, user_id: int) -> None:
+        actor = await self.db.users.get_one(id=user_id)
+        department = await self.get_one_department(department_id=dep_id)
+
+        if actor.status == "MANAGEMENT_HEAD" and actor.management_id != department.management_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Можно удалять отделы только своего управления",
+            )
+        if actor.status not in {"ADMIN", "DIVISION_HEAD", "MANAGEMENT_HEAD"}:
+            raise HTTPException(status_code=403, detail="Недостаточно прав для удаления отдела")
+
+        department_heads = [
+            head.id
+            for head in (department.head, department.deputy_head)
+            if head is not None
+        ]
+        if department_heads:
+            await self.db.users.update_status(users_ids=department_heads, status="USER")
+
+        await self.db.departments.delete(id=dep_id)
+        await self.db.save()
+
+    async def get_department(
+        self,
+        user_id: int | None = None,
+    ) -> list[DepartmentsWithHeadsOutSchema]:
+        if user_id is None:
+            return await self.db.departments.get_departments()
+        actor = await self.db.users.get_one(id=user_id)
+        if actor.status == "MANAGEMENT_HEAD":
+            if actor.management_id is None:
+                return []
+            return await self.db.departments.get_departments(
+                management_id=actor.management_id
+            )
         return await self.db.departments.get_departments()
 
-    async def get_one_department(self, department_id: int) -> DepartmentsWithHeadsOutSchema:
+    async def get_one_department(
+        self,
+        department_id: int,
+        user_id: int | None = None,
+    ) -> DepartmentsWithHeadsOutSchema:
         res: list[DepartmentsWithHeadsOutSchema] = await self.db.departments.get_departments(id=department_id)
         if not res:
             raise DepartmentNotFoundException
+        if user_id is not None:
+            actor = await self.db.users.get_one(id=user_id)
+            if (
+                actor.status == "MANAGEMENT_HEAD"
+                and res[0].management_id != actor.management_id
+            ):
+                raise DepartmentNotFoundException
         return res[0]

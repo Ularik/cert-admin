@@ -15,6 +15,7 @@ async def post_task(
         description: str | None = Form(None),
         deadlines: date | None = Form(None),
         note: str | None = Form(None),
+        management_id: int | None = Form(None),
         departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([])
@@ -26,6 +27,7 @@ async def post_task(
         departments_ids=departments_ids,
         deadlines=deadlines,
         note=note,
+        management_id=management_id,
         attachments=attachments,
         executor_ids=executor_ids
     )
@@ -40,6 +42,7 @@ async def put_task(
         description: str | None = Form(None),
         deadlines: date | None = Form(None),
         note: str | None = Form(None),
+        management_id: int | None = Form(None),
         departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([]),
@@ -52,6 +55,7 @@ async def put_task(
         description=description,
         deadlines=deadlines,
         note=note,
+        management_id=management_id,
         departments_ids=departments_ids,
         attachments=attachments,
         old_attachments_id_from_front=old_attachments_ids,
@@ -74,7 +78,8 @@ async def patch_task(
 async def delete_task(
         db: DBDep,
         id: int,
+        user: AuthUserDep,
 ):
     # удалить только свою задач
-    await TasksService(db).delete_task_by_admin(task_id=id)
+    await TasksService(db).delete_task_by_admin(task_id=id, user_id=user.user_id)
     return 200, {'status': 'delete success'}

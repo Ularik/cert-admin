@@ -18,6 +18,8 @@ class Tasks(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     author: Mapped["Users"] = relationship()
+    management_id: Mapped[int] = mapped_column(ForeignKey("managements.id", ondelete="RESTRICT"))
+    management: Mapped["Managements"] = relationship()
     title: Mapped[str] = mapped_column(String(255), unique=True)
     description: Mapped[Optional[str]]
     deadlines: Mapped[date | None]

@@ -28,11 +28,11 @@ class TaskAlreadyExistException(UniqueObjIsExistException):
     detail = 'Такая задача уже существует, поменяйте название title'
 
 class DepartmentAlreadyExistException(UniqueObjIsExistException):
-    detail = 'Такой отдел уже существует, поменяйте название title'
+    detail = 'Отдел с таким названием уже существует в этом управлении'
 
 
 class UserAlreadyExistException(UniqueObjIsExistException):
-    detail = "Пользователь с таким имененем уже существует"
+    detail = "Пользователь с таким именем и фамилией уже существует"
 
 class HasNotRightsException(Exception):
     detail = 'У вас недостаточно прав'

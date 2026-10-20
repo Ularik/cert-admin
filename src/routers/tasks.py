@@ -18,6 +18,8 @@ async def post_task(
         description: str | None = Form(None),
         deadlines: date | None = Form(None),
         note: str | None = Form(None),
+        management_id: int | None = Form(None),
+        departments_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([]),
         executor_ids: list[int] = Form([])
 ):
@@ -27,6 +29,8 @@ async def post_task(
         description=description,
         deadlines=deadlines,
         note=note,
+        management_id=management_id,
+        departments_ids=departments_ids,
         attachments=attachments,
         executor_ids=executor_ids
     )
@@ -41,6 +45,8 @@ async def put_task(
         description: str | None = Form(None),
         deadlines: date | None = Form(None),
         note: str | None = Form(None),
+        management_id: int | None = Form(None),
+        departments_ids: list[int] = Form([]),
         executor_ids: list[int] = Form([]),
         attachments: list[UploadFile] = Form([]),
         old_attachments_ids: list[int] = Form([])
@@ -52,6 +58,8 @@ async def put_task(
         description=description,
         deadlines=deadlines,
         note=note,
+        management_id=management_id,
+        departments_ids=departments_ids,
         attachments=attachments,
         old_attachments_id_from_front=old_attachments_ids,
         executor_ids=executor_ids
@@ -87,14 +95,14 @@ async def download_task_document(doc_id: int, db: DBDep):
 
 
 @router.get("/")
-async def get_tasks(db: DBDep, query_params: QueryParamsDep):
-    res = await TasksService(db).get_tasks(query_params)
+async def get_tasks(db: DBDep, user: AuthUserDep, query_params: QueryParamsDep):
+    res = await TasksService(db).get_tasks(query_params, user_id=user.user_id)
     return res
 
 
 @router.get("/{id}")
-async def get_task_detail(db: DBDep, id: int):
-    res = await TasksService(db).get_one(task_id=id)
+async def get_task_detail(db: DBDep, user: AuthUserDep, id: int):
+    res = await TasksService(db).get_one(task_id=id, user_id=user.user_id)
     return res
 
 

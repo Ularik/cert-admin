@@ -26,6 +26,7 @@ class DocumentOutSchema(DocumentLiteSchema):
 
 class TaskCreateUpdateSchema(BaseModel):
     author_id: int
+    management_id: int
     title: str
     description: str | None = None
     deadlines: date | None = None
@@ -65,4 +66,3 @@ class TaskFullOutSchema(TaskCreateUpdateSchema):
 class TaskApiResponseSchema(BaseModel):
     total: int
     items: list[TaskFullOutSchema]
-

@@ -54,7 +54,7 @@ async def ac() -> AsyncClient:
 async def test_user(setup_database, ac):
     async def wrapper(title: str = "test_user") -> UserOutSchema:
         response = await ac.post(
-            "/users/",
+            "/api/users/",
             json={
                 "username": title,
                 "last_name": title,
@@ -70,11 +70,17 @@ async def test_user(setup_database, ac):
 @pytest.fixture(scope="function", autouse=False)
 async def test_department(setup_database, admin_ac):
     async def wrapper(title: str = "test_department"):
+        management_response = await admin_ac.post(
+            "/api/admin/managements/",
+            json={"title": f"{title} management"},
+        )
+        assert management_response.status_code == 200
         response = await admin_ac.post(
-            "/admin/departments/",
+            "/api/admin/departments/",
             json={
                 "title": title,
                 "description": title,
+                "management_id": management_response.json()["id"],
             }
         )
         department = response.json()
@@ -85,7 +91,7 @@ async def test_department(setup_database, admin_ac):
 @pytest.fixture(scope="function", autouse=False)
 async def admin_ac(ac) -> AsyncGenerator[AsyncClient]:
     response = await ac.post(
-        "/users/",
+        "/api/users/",
         json={
             "username": "admin",
             "last_name": "admin",
@@ -98,7 +104,7 @@ async def admin_ac(ac) -> AsyncGenerator[AsyncClient]:
     assert response.status_code == 200
 
     await ac.post(
-        "/users/login",
+        "/api/users/login",
         json={
             "username": "admin",
             "last_name": "admin",

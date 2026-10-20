@@ -7,6 +7,7 @@ from src.schemas.users import UserOutSchema
 class DepartmentRequestCreateUpdateSchema(BaseModel):
     title: str = Field(description="Название отдела")
     description: str | None = Field(description="Описание отдела", default=None)
+    management_id: int = Field(description="ID управления")
     head_id: int | None = Field(default=None, description="ID руководителя")
     deputy_head_id: int | None = Field(default=None, description="ID заместителя")
 
@@ -25,17 +26,20 @@ class DepartmentRequestCreateUpdateSchema(BaseModel):
 class DepartmentCreateUpdateSchema(BaseModel):
     title: str = Field(description="Название отдела")
     description: str | None = Field(description="Описание отдела", default=None)
+    management_id: int
 
 
 class DepartmentLiteOutSchema(BaseModel):
     id: int
     title: str
+    management_id: int
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 class DepartmentsOutSchema(BaseModel):
     id: int
     title: str = Field(description="Название отдела")
     description: str | None = Field(description="Описание отдела", default=None)
+    management_id: int
     created_at: datetime
     updated_at: datetime
 

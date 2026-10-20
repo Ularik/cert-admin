@@ -1,7 +1,7 @@
 from typing import Optional
 
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import String, DateTime, func, ForeignKey, CheckConstraint, and_
+from sqlalchemy import String, DateTime, func, ForeignKey, and_, UniqueConstraint
 from datetime import datetime
 from src.database import Base
 from src.models import Users, UserStatus
@@ -9,10 +9,22 @@ from src.models import Users, UserStatus
 
 class Departments(Base):
     __tablename__ = "departments"
+    __table_args__ = (
+        UniqueConstraint(
+            "management_id",
+            "title",
+            name="uq_departments_management_id_title",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(100), unique=True)
+    title: Mapped[str] = mapped_column(String(100))
     description: Mapped[str | None]
+    management_id: Mapped[int] = mapped_column(
+        ForeignKey("managements.id", ondelete="RESTRICT"),
+        comment="Управление"
+    )
+    management: Mapped["Managements"] = relationship(back_populates="departments")
     users: Mapped[list["Users"]] = relationship(back_populates="department")
     head: Mapped["Users"] = relationship(
         "Users",

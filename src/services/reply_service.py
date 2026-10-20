@@ -1,5 +1,5 @@
 from src.schemas.tasks import TaskPatchStatusSchema
-from src.exceptions.exceptions import ReplyNotFoundException
+from src.exceptions.exceptions import ReplyNotFoundException, TaskNotFoundException
 from src.schemas.users import UserInCookiesSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
 from src.schemas.tasks_reply import ReplyLiteOutSchema, ReplyUpdateSchema, ReplyCreateSchema, ReplyFullOutSchema
@@ -10,14 +10,38 @@ from src.schemas.tasks import DocumentLiteSchema
 
 class ReplyService(BaseService):
 
-    async def get_replies(self, task_id: int) -> list[ReplyFullOutSchema]:
+    async def _check_management_scope(
+        self,
+        task_id: int,
+        actor_id: int,
+    ) -> None:
+        actor = await self.db.users.get_one(id=actor_id)
+        if actor.status != "MANAGEMENT_HEAD":
+            return
+        task = await self.db.tasks.get_one_or_none(id=task_id)
+        if task is None or task.management_id != actor.management_id:
+            raise TaskNotFoundException
+
+    async def get_replies(
+        self,
+        task_id: int,
+        actor_id: int | None = None,
+    ) -> list[ReplyFullOutSchema]:
+        if actor_id is not None:
+            await self._check_management_scope(task_id, actor_id)
         replies: list[ReplyFullOutSchema] = await self.db.reply_tasks.get_filtered_replies(task_id=task_id)
         return replies
 
-    async def get_one_reply(self, reply_id: int) -> ReplyFullOutSchema:
+    async def get_one_reply(
+        self,
+        reply_id: int,
+        actor_id: int | None = None,
+    ) -> ReplyFullOutSchema:
         res = await self.db.reply_tasks.get_filtered_replies(id=reply_id)
         if not res:
             raise ReplyNotFoundException
+        if actor_id is not None:
+            await self._check_management_scope(res[0].task_id, actor_id)
         return res[0]
 
     async def create_reply(
@@ -52,8 +76,11 @@ class ReplyService(BaseService):
             reply_id: int,
             attachments: list[UploadFile],
             old_attachments_ids: list[int],
-            content: str | None = None
+            content: str | None = None,
+            actor_id: int | None = None,
     ) -> ReplyFullOutSchema:
+        if actor_id is not None:
+            await self._check_reply_management_scope(reply_id, actor_id)
         docs: list[DocumentLiteSchema] = await self.db.reply_documents.update_documents(
             reply_id=reply_id,
             new_documents=attachments,
@@ -65,7 +92,18 @@ class ReplyService(BaseService):
         await self.db.save()
         return ReplyFullOutSchema(**reply.model_dump(), attachments=docs)
 
-    async def delete_reply(self, reply_id: int):
+    async def delete_reply(self, reply_id: int, actor_id: int | None = None):
+        if actor_id is not None:
+            await self._check_reply_management_scope(reply_id, actor_id)
         await self.db.reply_tasks.delete(id=reply_id)
         await self.db.save()
 
+    async def _check_reply_management_scope(
+        self,
+        reply_id: int,
+        actor_id: int,
+    ) -> None:
+        reply = await self.db.reply_tasks.get_filtered_replies(id=reply_id)
+        if not reply:
+            raise ReplyNotFoundException
+        await self._check_management_scope(reply[0].task_id, actor_id)

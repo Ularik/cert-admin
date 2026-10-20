@@ -5,8 +5,16 @@ from typing import Literal
 class UsersAuthSchema(BaseModel):
     username: str
     last_name: str
-    status: Literal["ADMIN", "HEAD", "DEPUTY", "USER"] = Field(default="USER")
+    status: Literal[
+        "ADMIN",
+        "DIVISION_HEAD",
+        "MANAGEMENT_HEAD",
+        "HEAD",
+        "DEPUTY",
+        "USER",
+    ] = Field(default="USER")
     department_id: int | None = None
+    management_id: int | None = None
     password: str
 
 
@@ -26,6 +34,7 @@ class UserAddSchema(BaseModel):
     last_name: str
     status: str
     department_id: int | None = None
+    management_id: int | None = None
     hashed_password: bytes
 
     model_config = ConfigDict(from_attributes=True, extra='ignore')
@@ -37,6 +46,7 @@ class UserOutSchema(BaseModel):
     last_name: str
     status: str
     department_id: int | None
+    management_id: int | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -46,6 +56,7 @@ class UserWithDepartmentOut(BaseModel):
     last_name: str | None = None
     status: str
     department_id: int | None = None
+    management_id: int | None = None
     department_title: str | None = None
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
@@ -53,8 +64,17 @@ class UserWithDepartmentOut(BaseModel):
 class UserUpdateSchema(BaseModel):
     username: str | None = None
     last_name: str | None = None
-    status: Literal["USER", "HEAD", "DEPUTY", "ADMIN", None] = None
+    status: Literal[
+        "USER",
+        "DEPUTY",
+        "HEAD",
+        "MANAGEMENT_HEAD",
+        "DIVISION_HEAD",
+        "ADMIN",
+        None,
+    ] = None
     department_id: int | None = None
+    management_id: int | None = None
 
 
 class UserHashedPswdSchema(UserAddSchema):

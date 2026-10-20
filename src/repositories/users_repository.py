@@ -4,7 +4,7 @@ from src.models.users import Users
 from src.models.users_tasks import UsersTasks
 from src.schemas.users import UserHashedPswdSchema, UserOutSchema, UserWithDepartmentOut, UserUpdateSchema
 from src.schemas.users_tasks import UsersConnectTaskSchema
-from sqlalchemy import select, insert, update
+from sqlalchemy import select, insert, update, or_
 from sqlalchemy.orm import aliased
 from typing import Literal
 
@@ -30,7 +30,18 @@ class UsersRepository(BaseRepository):
         res: UserOutSchema = await self.edit(data, id=user_id)
         return res
 
-    async def update_status(self, users_ids: list[int], status: Literal["ADMIN", "HEAD", "USER"]):
+    async def update_status(
+        self,
+        users_ids: list[int],
+        status: Literal[
+            "ADMIN",
+            "DIVISION_HEAD",
+            "MANAGEMENT_HEAD",
+            "HEAD",
+            "DEPUTY",
+            "USER",
+        ],
+    ):
         query = (
             update(self.model)
             .filter(self.model.id.in_(users_ids))
@@ -39,7 +50,11 @@ class UsersRepository(BaseRepository):
         )
         await self.session.execute(query)
 
-    async def get_user_full_data(self, department_id: int = None) -> list[UserWithDepartmentOut]:
+    async def get_user_full_data(
+        self,
+        department_id: int | None = None,
+        management_id: int | None = None,
+    ) -> list[UserWithDepartmentOut]:
 
         query = (
             select(
@@ -48,6 +63,7 @@ class UsersRepository(BaseRepository):
                 self.model.last_name,
                 self.model.status,
                 self.model.department_id,
+                self.model.management_id,
                 Departments.title.label("department_title"),
             )
             .outerjoin(Departments, self.model.department_id == Departments.id)
@@ -55,6 +71,23 @@ class UsersRepository(BaseRepository):
 
         if department_id:
             query = query.where(self.model.department_id == department_id)
+        if management_id is not None:
+            department_ids = select(Departments.id).where(
+                Departments.management_id == management_id
+            )
+            query = query.where(
+                or_(
+                    self.model.management_id == management_id,
+                    self.model.department_id.in_(department_ids),
+                )
+            )
 
         result = await self.session.execute(query)
         return [UserWithDepartmentOut.model_validate(u) for u in result.mappings().all()]
+
+    async def get_users_by_ids(self, user_ids: list[int]) -> list[UserOutSchema]:
+        if not user_ids:
+            return []
+        query = select(self.model).where(self.model.id.in_(user_ids))
+        result = await self.session.execute(query)
+        return [UserOutSchema.model_validate(user) for user in result.scalars().all()]

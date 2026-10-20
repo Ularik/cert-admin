@@ -25,6 +25,13 @@ def register_exception_handlers(app):
     async def exist_exception_handler(request: Request, exc: exceptions.TaskAlreadyExistException):
         raise HTTPException(status_code=400, detail=exc.detail)
 
+    @app.exception_handler(exceptions.DepartmentAlreadyExistException)
+    async def department_exist_exception_handler(
+        request: Request,
+        exc: exceptions.DepartmentAlreadyExistException,
+    ):
+        return JSONResponse(status_code=409, content={"detail": exc.detail})
+
     @app.exception_handler(exceptions.UserAlreadyExistException)
     async def exist_exception_handler(request: Request, exc: exceptions.UserAlreadyExistException):
         raise HTTPException(status_code=400, detail=exc.detail)

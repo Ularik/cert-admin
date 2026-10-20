@@ -14,7 +14,7 @@ async def get_tasks_reply(
         user: AuthUserDep,
         id: int,
 ):
-    return await ReplyService(db).get_replies(task_id=id)
+    return await ReplyService(db).get_replies(task_id=id, actor_id=user.user_id)
 
 
 @router.get("/tasks_reply/{doc_id}/download")
@@ -40,7 +40,7 @@ async def get_tasks_reply(
         user: AuthUserDep,
         id: int,
 ):
-    return await ReplyService(db).get_one_reply(reply_id=id)
+    return await ReplyService(db).get_one_reply(reply_id=id, actor_id=user.user_id)
 
 
 @router.post("/{id}/tasks_reply")
@@ -62,6 +62,7 @@ async def response_on_task(
 @router.put("/tasks_reply/{id}")
 async def update_reply(
         db: DBDep,
+        user: AuthUserDep,
         id: int,
         content: str = Form(...),
         attachments: list[UploadFile] = Form([]),
@@ -71,13 +72,15 @@ async def update_reply(
         reply_id=id,
         content=content,
         attachments=attachments,
-        old_attachments_ids=old_attachments_ids
+        old_attachments_ids=old_attachments_ids,
+        actor_id=user.user_id,
     )
 
 @router.delete("/tasks_reply/{id}")
 async def delete_reply(
         db: DBDep,
+        user: AuthUserDep,
         id: int
 ):
-    await ReplyService(db).delete_reply(reply_id=id)
+    await ReplyService(db).delete_reply(reply_id=id, actor_id=user.user_id)
     return 200, "delete success"

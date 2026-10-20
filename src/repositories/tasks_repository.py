@@ -17,6 +17,7 @@ class TasksRepository(BaseRepository):
     async def get_filtered_tasks(self,
                                  *args,
                                  department_id: int | None = None,
+                                 management_id: int | None = None,
                                  from_date: date | None = None,
                                  to_date: date | None = None,
                                  rush: bool | None = None,
@@ -29,6 +30,8 @@ class TasksRepository(BaseRepository):
         args = [*args]
         if department_id is not None:
             args.append(self.model.departments.any(Departments.id == department_id))
+        if management_id is not None:
+            args.append(self.model.management_id == management_id)
 
         if from_date is not None:
             args.append(self.model.created_at >= from_date)
@@ -91,7 +94,7 @@ class TasksRepository(BaseRepository):
         # 1. Подсчет количества через subquery
         count_query = select(func.count()).select_from(base_query.order_by(None).subquery())
         total_count = (await self.session.execute(count_query)).scalar_one()
-        # print(base_query.compile(compile_kwargs={"literal_binds": True}))
+        print(base_query.compile(compile_kwargs={"literal_binds": True}))
         # 2. Добавление связей и пагинации
         data_query = (
             base_query
@@ -126,6 +129,5 @@ class TasksRepository(BaseRepository):
             .where(self.model.status != "DONE", self.model.deadlines < today)
         )
         await self.session.execute(query)
-
 
 

@@ -22,8 +22,15 @@ async def add_user(db: DBDep, data: UsersAuthSchema):
 
 
 @router.get("/")
-async def get_users(db: DBDep, department_id: int | None = None):
-    return await UserService(db).get_users(department_id=department_id)
+async def get_users(
+    db: DBDep,
+    user: AuthUserDep,
+    department_id: int | None = None,
+):
+    return await UserService(db).get_users(
+        department_id=department_id,
+        actor_id=user.user_id,
+    )
 
 
 @router.get("/roles")
@@ -33,13 +40,16 @@ async def get_users_statuses_list():
 
 @router.get("/me")
 async def get_me(db: DBDep, user: AuthUserDep):
-    user = await UserService(db).get_user(id=user.user_id)
+    user = await UserService(db).get_user(
+        id=user.user_id,
+        actor_id=user.user_id,
+    )
     return user
 
 
 @router.get("/{id}")
-async def get_me(db: DBDep, id: int):
-    user = await UserService(db).get_user(id=id)
+async def get_me(db: DBDep, id: int, user: AuthUserDep):
+    user = await UserService(db).get_user(id=id, actor_id=user.user_id)
     return user
 
 
