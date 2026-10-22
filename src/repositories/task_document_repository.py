@@ -89,3 +89,8 @@ class TasksDocumentRepository(BaseRepository):
         result = await self.session.execute(query)
         document = result.scalar_one_or_none()
         return DocumentOutSchema.model_validate(document)
+
+    async def get_task_id(self, document_id: int) -> int | None:
+        query = select(self.model.task_id).where(self.model.id == document_id)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()

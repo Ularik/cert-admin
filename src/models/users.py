@@ -22,6 +22,11 @@ ADMIN_ACCESS_STATUSES = frozenset({
     UserStatus.MANAGEMENT_HEAD.value,
 })
 
+MANAGEMENT_SCOPED_STATUSES = frozenset({
+    UserStatus.MANAGEMENT_HEAD.value,
+    UserStatus.USER.value,
+})
+
 
 class Users(Base):
     __tablename__ = "users"

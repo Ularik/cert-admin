@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from src.exceptions.exceptions import ObjectNotFoundException, UniqueObjIsExistException
 from src.schemas.managements import ManagementCreateUpdateSchema, ManagementOutSchema, ManagementRequestSchema
 from src.schemas.users import UserUpdateSchema
+from src.models.users import MANAGEMENT_SCOPED_STATUSES
 from src.services.base import BaseService
 
 
@@ -13,11 +14,12 @@ class ManagementService(BaseService):
     ) -> list[ManagementOutSchema]:
         if user_id is not None:
             actor = await self.db.users.get_one(id=user_id)
-            if actor.status == "MANAGEMENT_HEAD":
-                if actor.management_id is None:
+            if actor.status in MANAGEMENT_SCOPED_STATUSES:
+                management_id = await self.get_user_management_id(actor)
+                if management_id is None:
                     return []
                 return await self.db.managements.get_managements(
-                    id=actor.management_id
+                    id=management_id
                 )
         return await self.db.managements.get_managements()
 
@@ -28,9 +30,10 @@ class ManagementService(BaseService):
     ) -> ManagementOutSchema:
         if user_id is not None:
             actor = await self.db.users.get_one(id=user_id)
+            actor_management_id = await self.get_user_management_id(actor)
             if (
-                actor.status == "MANAGEMENT_HEAD"
-                and actor.management_id != management_id
+                actor.status in MANAGEMENT_SCOPED_STATUSES
+                and actor_management_id != management_id
             ):
                 raise ObjectNotFoundException
         result = await self.db.managements.get_managements(id=management_id)

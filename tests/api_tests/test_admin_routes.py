@@ -103,6 +103,74 @@ async def test_admin_user_creation_respects_role_and_management_scope(admin_ac):
     assert forbidden_department.status_code == 403
 
 
+async def test_head_can_create_deputy_only_in_own_department(admin_ac):
+    management = await admin_ac.post(
+        "/api/admin/managements/",
+        json={"title": f"management for deputy creation {uuid.uuid4().hex[:8]}"},
+    )
+    assert management.status_code == 200
+
+    department_ids = []
+    for suffix in ("own", "other"):
+        department = await admin_ac.post(
+            "/api/admin/departments/",
+            json={
+                "title": f"{suffix} department for deputy {uuid.uuid4().hex[:8]}",
+                "management_id": management.json()["id"],
+            },
+        )
+        assert department.status_code == 200
+        department_ids.append(department.json()["id"])
+
+    head = await admin_ac.post(
+        "/api/admin/users/",
+        json={
+            "username": f"head-for-deputy-{uuid.uuid4().hex[:8]}",
+            "last_name": "Testov",
+            "status": "HEAD",
+            "department_id": department_ids[0],
+            "password": "password",
+        },
+    )
+    assert head.status_code == 200
+
+    await admin_ac.post(
+        "/api/users/login",
+        json={
+            "username": head.json()["username"],
+            "last_name": "Testov",
+            "password": "password",
+        },
+    )
+
+    deputy = await admin_ac.post(
+        "/api/head/users/",
+        json={
+            "username": f"deputy-{uuid.uuid4().hex[:8]}",
+            "last_name": "Testov",
+            "status": "DEPUTY",
+            "department_id": department_ids[0],
+            "password": "password",
+        },
+    )
+    assert deputy.status_code == 200
+    assert deputy.json()["status"] == "DEPUTY"
+    assert deputy.json()["department_id"] == department_ids[0]
+    assert deputy.json()["management_id"] == management.json()["id"]
+
+    out_of_department = await admin_ac.post(
+        "/api/head/users/",
+        json={
+            "username": f"out-of-department-{uuid.uuid4().hex[:8]}",
+            "last_name": "Testov",
+            "status": "DEPUTY",
+            "department_id": department_ids[1],
+            "password": "password",
+        },
+    )
+    assert out_of_department.status_code == 403
+
+
 async def test_admin_user_update_changes_role_and_organization(admin_ac):
     management = await admin_ac.post(
         "/api/admin/managements/",

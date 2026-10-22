@@ -6,6 +6,7 @@ from src.schemas.tasks_reply import ReplyLiteOutSchema, ReplyUpdateSchema, Reply
 from src.services.base import BaseService
 from fastapi import UploadFile
 from src.schemas.tasks import DocumentLiteSchema
+from src.models.users import MANAGEMENT_SCOPED_STATUSES
 
 
 class ReplyService(BaseService):
@@ -16,10 +17,11 @@ class ReplyService(BaseService):
         actor_id: int,
     ) -> None:
         actor = await self.db.users.get_one(id=actor_id)
-        if actor.status != "MANAGEMENT_HEAD":
+        if actor.status not in MANAGEMENT_SCOPED_STATUSES:
             return
         task = await self.db.tasks.get_one_or_none(id=task_id)
-        if task is None or task.management_id != actor.management_id:
+        management_id = await self.get_user_management_id(actor)
+        if task is None or task.management_id != management_id:
             raise TaskNotFoundException
 
     async def get_replies(
@@ -51,6 +53,7 @@ class ReplyService(BaseService):
             content: str,
             attachments: list[UploadFile]
     ):
+        await self._check_management_scope(task_id, executor.user_id)
         # обновляем статус задачи на "в процессе"
         task_update_status = TaskPatchStatusSchema(status="PROGRESS")
         await self.db.tasks.edit(data=task_update_status, id=task_id)

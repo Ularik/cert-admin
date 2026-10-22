@@ -6,7 +6,7 @@ from src.exceptions.exceptions import ObjectNotFoundException, DepartmentNotFoun
     TaskNotFoundException
 from src.routers.dependencies import QueryParamsSchema
 from src.schemas.users import UserOutSchema
-from src.models.users import ADMIN_ACCESS_STATUSES
+from src.models.users import ADMIN_ACCESS_STATUSES, MANAGEMENT_SCOPED_STATUSES
 from src.services.base import BaseService
 from src.schemas.tasks import (TaskCreateUpdateSchema, TaskOutSchema,
                                TaskLiteOutSchema, TaskApiResponseSchema, TaskFullOutSchema, TaskPatchStatusSchema)
@@ -211,15 +211,16 @@ class TasksService(BaseService):
         management_id = query_params.management_id
         if user_id is not None:
             actor = await self.db.users.get_one(id=user_id)
-            if actor.status == "MANAGEMENT_HEAD":
-                if actor.management_id is None:
+            if actor.status in MANAGEMENT_SCOPED_STATUSES:
+                actor_management_id = await self.get_user_management_id(actor)
+                if actor_management_id is None:
                     return TaskApiResponseSchema(total=0, items=[])
                 if (
                     management_id is not None
-                    and management_id != actor.management_id
+                    and management_id != actor_management_id
                 ):
                     raise HasNotRightsToTaskException
-                management_id = actor.management_id
+                management_id = actor_management_id
 
         return await self.db.tasks.get_filtered_tasks(
             department_id=query_params.department_id,
@@ -244,9 +245,10 @@ class TasksService(BaseService):
             raise TaskNotFoundException
         if user_id is not None:
             actor = await self.db.users.get_one(id=user_id)
+            actor_management_id = await self.get_user_management_id(actor)
             if (
-                actor.status == "MANAGEMENT_HEAD"
-                and actor.management_id != task.items[0].management_id
+                actor.status in MANAGEMENT_SCOPED_STATUSES
+                and actor_management_id != task.items[0].management_id
             ):
                 raise TaskNotFoundException
         return task.items[0]

@@ -18,8 +18,11 @@ async def get_tasks_reply(
 
 
 @router.get("/tasks_reply/{doc_id}/download")
-async def download_reply_document(doc_id: int, db: DBDep):
-    doc = await DocumentService(db).download_reply_document(document_id=doc_id)
+async def download_reply_document(doc_id: int, db: DBDep, user: AuthUserDep):
+    doc = await DocumentService(db).download_reply_document(
+        document_id=doc_id,
+        actor_id=user.user_id,
+    )
     if not doc:
         raise HTTPException(status_code=404, detail="Документ не найден")
 

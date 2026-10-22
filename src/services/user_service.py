@@ -1,6 +1,7 @@
 from src.exceptions.exceptions import UniqueObjIsExistException, UserAlreadyExistException
 from src.schemas.users import UserLoginSchema, UserInCookiesSchema, UsersAuthSchema, UserOutSchema, UserAddSchema, \
     UserUpdateSchema
+from src.models.users import MANAGEMENT_SCOPED_STATUSES
 from src.services.base import BaseService
 from src.services.auth import AuthService
 from fastapi import HTTPException
@@ -55,6 +56,10 @@ class UserService(BaseService):
             if actor.status in {"ADMIN", "DIVISION_HEAD"}
             else {"HEAD", "DEPUTY", "USER"}
             if actor.status == "MANAGEMENT_HEAD"
+            else {"DEPUTY", "USER"}
+            if actor.status == "HEAD"
+            else {"USER"}
+            if actor.status == "DEPUTY"
             else set()
         )
         if data.status not in allowed_roles:
@@ -87,7 +92,20 @@ class UserService(BaseService):
                 department = await self.db.departments.get_one(id=data.department_id)
                 management_id = department.management_id
 
-        if actor.status == "MANAGEMENT_HEAD":
+        if actor.status in {"HEAD", "DEPUTY"}:
+            if data.department_id != actor.department_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Можно добавлять сотрудников только в свой отдел",
+                )
+            if data.department_id is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Для сотрудника необходимо выбрать отдел",
+                )
+            department = await self.db.departments.get_one(id=data.department_id)
+            management_id = department.management_id
+        elif actor.status == "MANAGEMENT_HEAD":
             if data.department_id is None:
                 raise HTTPException(
                     status_code=422,
@@ -112,15 +130,10 @@ class UserService(BaseService):
         user = await self.db.users.get_one(id=id)
         if actor_id is not None:
             actor = await self.db.users.get_one(id=actor_id)
-            if actor.status == "MANAGEMENT_HEAD":
-                management_id = user.management_id
-                if user.department_id is not None:
-                    departments = await self.db.departments.get_departments(
-                        id=user.department_id
-                    )
-                    if departments:
-                        management_id = departments[0].management_id
-                if management_id != actor.management_id:
+            if actor.status in MANAGEMENT_SCOPED_STATUSES:
+                actor_management_id = await self.get_user_management_id(actor)
+                target_management_id = await self.get_user_management_id(user)
+                if target_management_id != actor_management_id:
                     raise HTTPException(status_code=404, detail="Сотрудник не найден")
         return user
 
@@ -132,8 +145,8 @@ class UserService(BaseService):
         management_id = None
         if actor_id is not None:
             actor = await self.db.users.get_one(id=actor_id)
-            if actor.status == "MANAGEMENT_HEAD":
-                management_id = actor.management_id
+            if actor.status in MANAGEMENT_SCOPED_STATUSES:
+                management_id = await self.get_user_management_id(actor)
                 if management_id is None:
                     return []
         return await self.db.users.get_user_full_data(

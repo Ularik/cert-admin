@@ -78,8 +78,11 @@ async def patch_task(
 
 
 @router.get("/task-documents/{doc_id}/download")
-async def download_task_document(doc_id: int, db: DBDep):
-    doc = await DocumentService(db).download_task_document(document_id=doc_id)
+async def download_task_document(doc_id: int, db: DBDep, user: AuthUserDep):
+    doc = await DocumentService(db).download_task_document(
+        document_id=doc_id,
+        actor_id=user.user_id,
+    )
     if not doc:
         raise HTTPException(status_code=404, detail="Документ не найден")
 

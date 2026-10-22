@@ -6,9 +6,29 @@ from src.schemas.users import UserUpdateSchema
 from src.services.base import BaseService
 from src.schemas.departments import DepartmentCreateUpdateSchema, DepartmentsOutSchema, \
     DepartmentRequestCreateUpdateSchema, DepartmentsWithHeadsOutSchema
+from src.models.users import MANAGEMENT_SCOPED_STATUSES
 
 
 class DepartmentService(BaseService):
+    async def _validate_management_head_leaders(
+        self,
+        *,
+        actor_management_id: int | None,
+        leader_ids: set[int],
+        actor_id: int,
+    ) -> None:
+        for leader_id in leader_ids:
+            leader = await self.db.users.get_one(id=leader_id)
+            leader_management_id = await self.get_user_management_id(leader)
+            if (
+                leader_id == actor_id
+                or actor_management_id is None
+                or leader_management_id != actor_management_id
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Можно назначать руководителями только сотрудников своего управления",
+                )
 
     async def add_department(
         self,
@@ -20,6 +40,12 @@ class DepartmentService(BaseService):
             raise HTTPException(status_code=403, detail="Недостаточно прав для создания отдела")
         if actor.status == "MANAGEMENT_HEAD" and actor.management_id != data.management_id:
             raise HTTPException(status_code=403, detail="Можно создавать отделы только в своем управлении")
+        if actor.status == "MANAGEMENT_HEAD":
+            await self._validate_management_head_leaders(
+                actor_management_id=actor.management_id,
+                leader_ids=set(filter(None, [data.head_id, data.deputy_head_id])),
+                actor_id=actor.id,
+            )
         if not await self.db.managements.get_managements(id=data.management_id):
             raise HTTPException(status_code=404, detail="Управление не найдено")
 
@@ -60,6 +86,12 @@ class DepartmentService(BaseService):
             or actor.management_id != data.management_id
         ):
             raise HTTPException(status_code=403, detail="Можно изменять отделы только своего управления")
+        if actor.status == "MANAGEMENT_HEAD":
+            await self._validate_management_head_leaders(
+                actor_management_id=actor.management_id,
+                leader_ids=set(filter(None, [data.head_id, data.deputy_head_id])),
+                actor_id=actor.id,
+            )
         if not await self.db.managements.get_managements(id=data.management_id):
             raise HTTPException(status_code=404, detail="Управление не найдено")
 
@@ -132,11 +164,12 @@ class DepartmentService(BaseService):
         if user_id is None:
             return await self.db.departments.get_departments()
         actor = await self.db.users.get_one(id=user_id)
-        if actor.status == "MANAGEMENT_HEAD":
-            if actor.management_id is None:
+        if actor.status in MANAGEMENT_SCOPED_STATUSES:
+            management_id = await self.get_user_management_id(actor)
+            if management_id is None:
                 return []
             return await self.db.departments.get_departments(
-                management_id=actor.management_id
+                management_id=management_id
             )
         return await self.db.departments.get_departments()
 
@@ -150,9 +183,10 @@ class DepartmentService(BaseService):
             raise DepartmentNotFoundException
         if user_id is not None:
             actor = await self.db.users.get_one(id=user_id)
+            management_id = await self.get_user_management_id(actor)
             if (
-                actor.status == "MANAGEMENT_HEAD"
-                and res[0].management_id != actor.management_id
+                actor.status in MANAGEMENT_SCOPED_STATUSES
+                and res[0].management_id != management_id
             ):
                 raise DepartmentNotFoundException
         return res[0]

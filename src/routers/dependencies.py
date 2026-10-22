@@ -4,7 +4,6 @@ from pygments.lexer import default
 
 from src.database import AsyncSessionMaker
 from src.schemas.users import UserInCookiesSchema
-from src.models.users import ADMIN_ACCESS_STATUSES
 from src.db_manager.db_manager import DbManager
 from fastapi import Depends, Request, HTTPException, status, Query
 from src.services.auth import AuthService
@@ -80,7 +79,7 @@ AuthUserDep = Annotated[UserInCookiesSchema, Depends(get_current_user)]
 
 
 async def get_admin_user(user_data: UserInCookiesSchema = Depends(get_current_user)) -> UserInCookiesSchema:
-    if user_data.status not in ADMIN_ACCESS_STATUSES:
+    if user_data.status not in {"ADMIN", "DIVISION_HEAD"}:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав для выполнения операции"
@@ -91,12 +90,33 @@ async def get_head_user(user_data: UserInCookiesSchema = Depends(get_current_use
     if user_data.status not in {
         "ADMIN",
         "DIVISION_HEAD",
-        "MANAGEMENT_HEAD",
         "HEAD",
         "DEPUTY",
     }:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав для выполнения операции"
+        )
+    return user_data
+
+
+async def get_management_head_user(
+    user_data: UserInCookiesSchema = Depends(get_current_user),
+) -> UserInCookiesSchema:
+    if user_data.status != "MANAGEMENT_HEAD":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав для выполнения операции"
+        )
+    return user_data
+
+
+async def get_general_task_user(
+    user_data: UserInCookiesSchema = Depends(get_current_user),
+) -> UserInCookiesSchema:
+    if user_data.status == "MANAGEMENT_HEAD":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Используйте отдельный маршрут начальника управления"
         )
     return user_data

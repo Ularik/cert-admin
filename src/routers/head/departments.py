@@ -9,6 +9,7 @@ router = APIRouter(prefix="/departments")
 
 
 @router.post("/")
+@router.post("")
 async def post_department(
     db: DBDep,
     user: AuthUserDep,
