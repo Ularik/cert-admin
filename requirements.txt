@@ -7,5 +7,6 @@ pytest
 pytest-dotenv
 pytest-asyncio
 python-docx
+sqlalchemy[asyncio]
 celery
 redis
